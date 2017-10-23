@@ -1,3 +1,15 @@
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# AppCode
+.idea
+
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
@@ -16,17 +28,24 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 xcuserdata/
+xcuserdata
 
 ## Other
+*.xccheckout
 *.moved-aside
 *.xccheckout
 *.xcscmblueprint
 
 ## Obj-C/Swift specific
+DerivedData
 *.hmap
 *.ipa
 *.dSYM.zip
+*.xcuserstate
+*.xcscmblueprint
+*.gcno
 *.dSYM
+*.gcda
 
 ## Playgrounds
 timeline.xctimeline
@@ -42,6 +61,7 @@ playground.xcworkspace
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However
+Pods
 # you should judge for yourself, the pros and cons are mentioned at:
 # https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
 #
@@ -50,6 +70,7 @@ playground.xcworkspace
 # Carthage
 #
 # Add this line if you want to avoid checking in source code from Carthage dependencies.
+*.bcsymbolmap
 # Carthage/Checkouts
 
 Carthage/Build
@@ -65,3 +86,4 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
+Checkouts

@@ -1,0 +1,9 @@
+{
+  "commitish" : "1.13",
+  "iOS" : [
+    {
+      "hash" : "a316a6eb62dee4fc514e4815a1fabf2298c3ca40b9bf4c6746db637673a0e6bb",
+      "name" : "SweetUIKit"
+    }
+  ]
+}
