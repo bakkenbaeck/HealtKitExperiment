@@ -49,7 +49,7 @@ class TableViewController: SweetTableController {
             if let samples = samples {
                 let watchSamples = samples.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
 
-                var grouped = GroupedDataSource<Date, HKSample>()
+                let grouped = GroupedDataSource<Date, HKSample>()
                 watchSamples.forEach({ sample in
                     let calendar = Calendar.autoupdatingCurrent
                     let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
