@@ -5,72 +5,42 @@ import MapKit
 import SweetUIKit
 import SweetSwift
 
-public extension DispatchQueue {
+extension UIColor {
+    static var random: UIColor {
+        let colours = [UIColor.blue, .red, .green, .cyan, .yellow, .brown, .black, .orange, .magenta, .purple]
 
-    private static var _onceTracker = [String]()
-
-    /**
-     Executes a block of code, associated with a unique token, only once.  The code is thread safe and will
-     only execute the code once even in the presence of multithreaded calls.
-
-     - parameter token: A unique reverse DNS style name such as com.vectorform.<name> or a GUID
-     - parameter block: Block to execute once
-     */
-    public func once(token: String, block: (() -> Void)) {
-        objc_sync_enter(self);
-        defer { objc_sync_exit(self) }
-
-        if DispatchQueue._onceTracker.contains(token) {
-            return
-        }
-
-        DispatchQueue._onceTracker.append(token)
-
-        block()
+        return colours[Int(arc4random()) % colours.count]
     }
 }
-
-class LocationGeodesicPolyline: MKGeodesicPolyline {
-    var locations: [CLLocation] = []
-
-    override init() {
-        super.init()
-    }
-
-    convenience init(locations: [CLLocation]) {
-        let coordinates = locations.map { location -> CLLocationCoordinate2D in return location.coordinate }
-
-        self.init(coordinates: UnsafePointer<CLLocationCoordinate2D>(coordinates), count: coordinates.count)
-
-        self.locations = locations
-    }
-}
-
-let token = "12312312321"
 
 class ViewController: UIViewController {
     var cyclingActivitySamples: Set<HKWorkout> = [] {
         didSet {
+            DispatchQueue.main.sync {
+                self.mapView.removeOverlays(self.mapView.overlays)
+            }
+
             for workout in self.cyclingActivitySamples {
+                let query = HKSampleQuery(sampleType: HKSeriesType.workoutRoute(), predicate: HKQuery.predicateForObjects(from: workout), limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, routes, error in
 
-                let query = HKSampleQuery(sampleType: HKSeriesType.workoutRoute(), predicate: HKQuery.predicateForObjects(from: workout), limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+                    guard let routes = routes as? [HKWorkoutRoute], !routes.isEmpty else { return }
 
-                    guard let samples = samples as? [HKWorkoutRoute], !samples.isEmpty else { return }
-
-                    if let route = samples.last {
+                    for route in routes {
                         let query = HKWorkoutRouteQuery(route: route) { (routeQuery, locations, done, error) in
                             guard let locations = locations else { return }
 
-                            DispatchQueue.main.once(token: token) {
-                                let line = LocationGeodesicPolyline(locations: locations)
+                            DispatchQueue.main.async {
+                                let coordinates = locations.map({ location -> CLLocationCoordinate2D in return location.coordinate })
+                                let line = MKGeodesicPolyline(coordinates: UnsafePointer<CLLocationCoordinate2D>(coordinates), count: coordinates.count)
+
                                 self.mapView.add(line)
 
-                                if let coordinate = locations.last?.coordinate {
-                                    let span = MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                                    let region = MKCoordinateRegion(center: coordinate, span: span)
-
-                                    self.mapView.setRegion(region, animated: true)
-                                }
+//                                if let coordinate = locations.last?.coordinate {
+//                                    let span = MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+//                                    let region = MKCoordinateRegion(center: coordinate, span: span)
+//
+//                                    self.mapView.setRegion(region, animated: true)
+//                                }
                             }
                         }
 
@@ -140,7 +110,7 @@ class ViewController: UIViewController {
     }
 
     private func updateActivities() {
-        let sampleQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: self.cyclingPredicate, limit: 50, sortDescriptors: nil) { query, samples, error in
+        let sampleQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: self.cyclingPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
             guard error == nil else { return }
 
             if let samples = samples {
@@ -160,7 +130,7 @@ extension ViewController: MKMapViewDelegate {
 
         let renderer = MKPolylineRenderer(overlay: polyline)
         renderer.lineWidth = 3.0
-        renderer.strokeColor = .blue
+        renderer.strokeColor = .random
 
         return renderer
     }
