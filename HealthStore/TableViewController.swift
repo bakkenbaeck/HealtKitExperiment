@@ -6,10 +6,42 @@ import SweetUIKit
 import SweetSwift
 
 class TableViewController: SweetTableController {
+    let apiClient = APIClient()
+
     fileprivate var samples = GroupedDataSource<Date, HKSample>() {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
+
+                let workouts = self.samples.values
+                let workoutsJSON = workouts.flatMap({ sample -> [String: Any]? in
+                    guard let workout = sample as? HKWorkout else { return nil }
+
+                    let type = workout.activityTypeString
+                    let duration = workout.duration
+                    let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
+                    let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
+                    let start = workout.startDate
+                    let end = workout.endDate
+                    // let metadata = workout.metadata ?? [:]
+                    let device = workout.device?.name ?? ""
+                    let source = workout.sourceRevision.source.name
+
+                    return [
+                        "type": type,
+                        "duration": duration,
+                        "distance": distance,
+                        "energy": energy,
+                        "start_date_time_interval": start.timeIntervalSince1970,
+                        "end_date_time_interval": end.timeIntervalSince1970,
+                        "device_name": device,
+                        "source_name": source
+                        // "metadata": metadata,
+                    ]
+                })
+                self.apiClient.post(workouts: workoutsJSON, {
+                    print("done")
+                })
             }
         }
     }

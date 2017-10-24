@@ -12,6 +12,9 @@
 		9F2D2B6C1F9F2B5100E9C8F6 /* SweetUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */; };
 		9F4E8FA71F9F7D6400BE824C /* UIColor+Random.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4E8FA61F9F7D6400BE824C /* UIColor+Random.swift */; };
+		9F4E8FA91F9F7FD700BE824C /* Teapot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F4E8FA81F9F7FD700BE824C /* Teapot.framework */; };
+		9F4E8FAA1F9F7FDA00BE824C /* Teapot.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F4E8FA81F9F7FD700BE824C /* Teapot.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		9F4E8FAC1F9F7FE300BE824C /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4E8FAB1F9F7FE300BE824C /* APIClient.swift */; };
 		9F898E431F9F46580090ADF0 /* HKWorkout+TypeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */; };
 		9F898E451F9F53660090ADF0 /* GorupedDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F898E441F9F53660090ADF0 /* GorupedDataSource.swift */; };
 		9F898E461F9F67D00090ADF0 /* SweetSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -29,6 +32,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				9F4E8FAA1F9F7FDA00BE824C /* Teapot.framework in Embed Frameworks */,
 				9F2D2B6C1F9F2B5100E9C8F6 /* SweetUIKit.framework in Embed Frameworks */,
 				9F898E461F9F67D00090ADF0 /* SweetSwift.framework in Embed Frameworks */,
 			);
@@ -42,6 +46,8 @@
 		9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetSwift.framework; path = Carthage/Build/iOS/SweetSwift.framework; sourceTree = "<group>"; };
 		9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCell.swift; sourceTree = "<group>"; };
 		9F4E8FA61F9F7D6400BE824C /* UIColor+Random.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Random.swift"; sourceTree = "<group>"; };
+		9F4E8FA81F9F7FD700BE824C /* Teapot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Teapot.framework; path = Carthage/Build/iOS/Teapot.framework; sourceTree = "<group>"; };
+		9F4E8FAB1F9F7FE300BE824C /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HKWorkout+TypeString.swift"; sourceTree = "<group>"; };
 		9F898E441F9F53660090ADF0 /* GorupedDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GorupedDataSource.swift; sourceTree = "<group>"; };
 		9FBCA1131F9DF3BF00BFDF47 /* HealthStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -60,6 +66,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9FBCA12B1F9DF4EC00BFDF47 /* HealthKit.framework in Frameworks */,
+				9F4E8FA91F9F7FD700BE824C /* Teapot.framework in Frameworks */,
 				9F2D2B6A1F9F2B3600E9C8F6 /* SweetUIKit.framework in Frameworks */,
 				9F2D2B6B1F9F2B3600E9C8F6 /* SweetSwift.framework in Frameworks */,
 			);
@@ -98,6 +105,7 @@
 				9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */,
 				9FBCA11F1F9DF3BF00BFDF47 /* LaunchScreen.storyboard */,
 				9FBCA1221F9DF3BF00BFDF47 /* Info.plist */,
+				9F4E8FAB1F9F7FE300BE824C /* APIClient.swift */,
 			);
 			path = HealthStore;
 			sourceTree = "<group>";
@@ -105,6 +113,7 @@
 		9FBCA1291F9DF4EC00BFDF47 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				9F4E8FA81F9F7FD700BE824C /* Teapot.framework */,
 				9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */,
 				9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */,
 				9FBCA12A1F9DF4EC00BFDF47 /* HealthKit.framework */,
@@ -190,6 +199,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */,
+				9F4E8FAC1F9F7FE300BE824C /* APIClient.swift in Sources */,
 				9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */,
 				9FBCA1171F9DF3BF00BFDF47 /* AppDelegate.swift in Sources */,
 				9F898E431F9F46580090ADF0 /* HKWorkout+TypeString.swift in Sources */,

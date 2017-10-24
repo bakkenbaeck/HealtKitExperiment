@@ -14,16 +14,8 @@ class GroupedDataSource<Key: Comparable & Hashable, Item: Hashable> {
         return self.dictionary.keys
     }
 
-    func item(at indexPath: IndexPath) -> AnyHashable? {
-        let key = self.reversedSortedKeys[indexPath.section]
-
-        return self[key][indexPath.row]
-    }
-
-    func count(for section: Int) -> Int {
-        let key = self.reversedSortedKeys[section]
-
-        return self[key].count
+    var values: [Item] {
+        return Array(self.dictionary.values.joined())
     }
 
     subscript(key: Key) -> [Item] {
@@ -37,5 +29,17 @@ class GroupedDataSource<Key: Comparable & Hashable, Item: Hashable> {
         set {
             self.dictionary[key] = newValue
         }
+    }
+
+    func item(at indexPath: IndexPath) -> AnyHashable? {
+        let key = self.reversedSortedKeys[indexPath.section]
+
+        return self[key][indexPath.row]
+    }
+
+    func count(for section: Int) -> Int {
+        let key = self.reversedSortedKeys[section]
+
+        return self[key].count
     }
 }
