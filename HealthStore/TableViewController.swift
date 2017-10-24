@@ -14,7 +14,7 @@ extension UIColor {
 }
 
 class TableViewController: SweetTableController {
-    fileprivate var samples = [Date: [HKSample]]() {
+    fileprivate var samples = GroupedDataSource<Date, HKSample>() {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
@@ -49,18 +49,14 @@ class TableViewController: SweetTableController {
             if let samples = samples {
                 let watchSamples = samples.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
 
-                var grouped = [Date: [HKSample]]()
+                var grouped = GroupedDataSource<Date, HKSample>()
                 watchSamples.forEach({ sample in
                     let calendar = Calendar.autoupdatingCurrent
                     let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
 
                     let date = components.date!
 
-                    if grouped[date] == nil {
-                        grouped[date] = [HKSample]()
-                    }
-
-                    grouped[date]?.append(sample)
+                    grouped[date].append(sample)
                 })
 
                 self.samples = grouped
@@ -78,19 +74,18 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.samples.count
+        return self.samples.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let key = Array(self.samples.keys.sorted().reversed())[section]
-        return self.samples[key]?.count ?? 0
+        return self.samples.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
         let key = Array(self.samples.keys.sorted().reversed())[indexPath.section]
-        let sample = self.samples[key]?[indexPath.row]
+        let sample = self.samples[key][indexPath.row]
 
         let label: String
         if let workout = (sample as? HKWorkout) {
