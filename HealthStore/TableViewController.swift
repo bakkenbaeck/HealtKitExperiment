@@ -5,14 +5,6 @@ import MapKit
 import SweetUIKit
 import SweetSwift
 
-extension UIColor {
-    static var random: UIColor {
-        let colours = [UIColor.blue, .red, .green, .cyan, .yellow, .brown, .black, .orange, .magenta, .purple]
-
-        return colours[Int(arc4random()) % colours.count]
-    }
-}
-
 class TableViewController: SweetTableController {
     fileprivate var samples = GroupedDataSource<Date, HKSample>() {
         didSet {
@@ -22,15 +14,35 @@ class TableViewController: SweetTableController {
         }
     }
 
+    lazy var dateComponentsFormatter: DateComponentsFormatter = {
+        let dcf = DateComponentsFormatter()
+
+        dcf.unitsStyle = .abbreviated
+        dcf.allowedUnits = [.hour, .minute, .second]
+        dcf.zeroFormattingBehavior = .dropLeading
+
+        return dcf
+    }()
+
+    lazy var dateFormatter: DateFormatter = {
+        let df = DateFormatter()
+
+        df.dateStyle = .short
+        df.timeStyle = .short
+
+        return df
+    }()
+
     let healthStore = HKHealthStore()
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        self.title = "Workouts"
+
         self.view.addSubview(self.tableView)
         self.tableView.fillSuperview()
 
-        self.tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: 80))
         self.tableView.delegate = self
         self.tableView.dataSource = self
         self.tableView.register(SampleCell.self)
@@ -87,13 +99,17 @@ extension TableViewController: UITableViewDataSource {
         let sample = self.samples.item(at: indexPath)
 
         let label: String
+        let dateString: String
         if let workout = (sample as? HKWorkout) {
-            label = "\(workout.activityTypeString) - \(workout.totalEnergyBurned ?? HKQuantity.init(unit: HKUnit.kilocalorie(), doubleValue: 0))"
+            label = "\(workout.activityTypeString) (\(self.dateComponentsFormatter.string(from: workout.duration) ?? "0s")) - \(workout.totalEnergyBurned ?? HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: .nan))"
+            dateString = self.dateFormatter.string(from: workout.startDate)
         } else {
             label = ""
+            dateString = ""
         }
 
         cell.title = label
+        cell.dateString = dateString
 
         return cell
     }
@@ -104,12 +120,12 @@ extension TableViewController: UITableViewDataSource {
 
         let label = UILabel(withAutoLayout: true)
         view.addSubview(label)
-        label.fillSuperview(with: UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0))
+        label.fillSuperview(with: UIEdgeInsets(top: 24, left: 12, bottom: 0, right: 12))
 
         let df = DateFormatter()
         df.dateFormat = "MMMM yyyy"
         label.text = df.string(from: self.samples.reversedSortedKeys[section])
-        label.font = .boldSystemFont(ofSize: 30)
+        label.font = .boldSystemFont(ofSize: 24)
         label.textColor = .blue
 
         return view
