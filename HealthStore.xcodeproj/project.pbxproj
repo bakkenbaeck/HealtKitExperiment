@@ -10,11 +10,12 @@
 		9F2D2B6A1F9F2B3600E9C8F6 /* SweetUIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */; };
 		9F2D2B6B1F9F2B3600E9C8F6 /* SweetSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */; };
 		9F2D2B6C1F9F2B5100E9C8F6 /* SweetUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */; };
 		9F40E0C11F9E105400AE331F /* SweetSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F40E0BF1F9E105400AE331F /* SweetSwift.framework */; };
 		9F40E0C31F9E108600AE331F /* SweetSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F40E0BF1F9E105400AE331F /* SweetSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		9F898E431F9F46580090ADF0 /* HKWorkout+TypeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */; };
 		9FBCA1171F9DF3BF00BFDF47 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */; };
-		9FBCA1191F9DF3BF00BFDF47 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1181F9DF3BF00BFDF47 /* ViewController.swift */; };
-		9FBCA11C1F9DF3BF00BFDF47 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9FBCA11A1F9DF3BF00BFDF47 /* Main.storyboard */; };
+		9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */; };
 		9FBCA11E1F9DF3BF00BFDF47 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */; };
 		9FBCA1211F9DF3BF00BFDF47 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9FBCA11F1F9DF3BF00BFDF47 /* LaunchScreen.storyboard */; };
 		9FBCA12B1F9DF4EC00BFDF47 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9FBCA12A1F9DF4EC00BFDF47 /* HealthKit.framework */; };
@@ -38,11 +39,12 @@
 /* Begin PBXFileReference section */
 		9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetUIKit.framework; path = Carthage/Build/iOS/SweetUIKit.framework; sourceTree = "<group>"; };
 		9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetSwift.framework; path = Carthage/Build/iOS/SweetSwift.framework; sourceTree = "<group>"; };
+		9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCell.swift; sourceTree = "<group>"; };
 		9F40E0BF1F9E105400AE331F /* SweetSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetSwift.framework; path = Carthage/Build/iOS/SweetSwift.framework; sourceTree = SOURCE_ROOT; };
+		9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HKWorkout+TypeString.swift"; sourceTree = "<group>"; };
 		9FBCA1131F9DF3BF00BFDF47 /* HealthStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		9FBCA1181F9DF3BF00BFDF47 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		9FBCA11B1F9DF3BF00BFDF47 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewController.swift; sourceTree = "<group>"; };
 		9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9FBCA1201F9DF3BF00BFDF47 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9FBCA1221F9DF3BF00BFDF47 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -87,8 +89,9 @@
 			children = (
 				9FBCA1281F9DF4EC00BFDF47 /* HealthStore.entitlements */,
 				9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */,
-				9FBCA1181F9DF3BF00BFDF47 /* ViewController.swift */,
-				9FBCA11A1F9DF3BF00BFDF47 /* Main.storyboard */,
+				9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */,
+				9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */,
+				9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */,
 				9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */,
 				9FBCA11F1F9DF3BF00BFDF47 /* LaunchScreen.storyboard */,
 				9FBCA1221F9DF3BF00BFDF47 /* Info.plist */,
@@ -174,7 +177,6 @@
 			files = (
 				9FBCA1211F9DF3BF00BFDF47 /* LaunchScreen.storyboard in Resources */,
 				9FBCA11E1F9DF3BF00BFDF47 /* Assets.xcassets in Resources */,
-				9FBCA11C1F9DF3BF00BFDF47 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -185,22 +187,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9FBCA1191F9DF3BF00BFDF47 /* ViewController.swift in Sources */,
+				9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */,
+				9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */,
 				9FBCA1171F9DF3BF00BFDF47 /* AppDelegate.swift in Sources */,
+				9F898E431F9F46580090ADF0 /* HKWorkout+TypeString.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		9FBCA11A1F9DF3BF00BFDF47 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				9FBCA11B1F9DF3BF00BFDF47 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		9FBCA11F1F9DF3BF00BFDF47 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (

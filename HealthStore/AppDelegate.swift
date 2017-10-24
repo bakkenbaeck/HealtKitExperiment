@@ -1,13 +1,22 @@
 import UIKit
+import HealthKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    let healthStore = HKHealthStore()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        self.requestHealthAccessAuthorisationIfNeeded()
+
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = TableViewController()
+        window.makeKeyAndVisible()
+
+        self.window = window
+        
         return true
     }
 
@@ -33,6 +42,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    private func requestHealthAccessAuthorisationIfNeeded() {
+        let readSet = Set([HKWorkoutType.workoutType(),
+                           HKSeriesType.workoutRoute(),])
 
+        self.healthStore.requestAuthorization(toShare: nil, read: readSet) { success, error in
+            if let error = error {
+                print(error)
+
+                return;
+            }
+
+            print(success)
+        }
+    }
 }
 
