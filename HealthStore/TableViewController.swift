@@ -84,8 +84,7 @@ extension TableViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
-        let key = Array(self.samples.keys.sorted().reversed())[indexPath.section]
-        let sample = self.samples[key][indexPath.row]
+        let sample = self.samples.item(at: indexPath)
 
         let label: String
         if let workout = (sample as? HKWorkout) {
@@ -109,7 +108,7 @@ extension TableViewController: UITableViewDataSource {
 
         let df = DateFormatter()
         df.dateFormat = "MMMM yyyy"
-        label.text = df.string(from: Array(self.samples.keys.sorted().reversed())[section])
+        label.text = df.string(from: self.samples.reversedSortedKeys[section])
         label.font = .boldSystemFont(ofSize: 30)
         label.textColor = .blue
 
