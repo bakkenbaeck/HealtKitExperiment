@@ -49,6 +49,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                            HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
                            HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
                            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
+                           HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
                            ])
 
         self.healthStore.requestAuthorization(toShare: nil, read: readSet) { success, error in

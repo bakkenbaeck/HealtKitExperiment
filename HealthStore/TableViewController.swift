@@ -60,6 +60,14 @@ class TableViewController: SweetTableController {
         }
     }
 
+    fileprivate var distanceWalked = GroupedDataSource<Date, HKStatistics>() {
+        didSet {
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+    }
+
     lazy var dateComponentsFormatter: DateComponentsFormatter = {
         let dcf = DateComponentsFormatter()
 
@@ -86,7 +94,7 @@ class TableViewController: SweetTableController {
 
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .redo, target: self, action: #selector(self.uploadActivities))
 
-        self.title = "Workouts"
+        self.title = "HealthStore"
 
         self.view.addSubview(self.tableView)
         self.tableView.fillSuperview()
@@ -106,7 +114,17 @@ class TableViewController: SweetTableController {
         self.updateActiveEnergy()
         self.updateBasalEnergy()
         self.updateSteps()
-        self.updateWorkoutsWithHeartRateDate()
+        self.updateWalkingDistance()
+
+        // self.updateWorkoutsWithHeartRateDate()
+    }
+
+    func updateWalkingDistance() {
+        let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
+
+        self.executeStatistcsQuery(for: distanceType) { results in
+            self.distanceWalked = results
+        }
     }
 
     func updateBasalEnergy() {
@@ -206,41 +224,43 @@ class TableViewController: SweetTableController {
     }
 
     @objc private func uploadActivities() {
-        let workouts = self.workouts.values
+//        let workouts = self.workouts.values
+//
+//        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
+//            let type = workout.activityTypeString
+//            let duration = workout.duration
+//            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
+//            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
+//            let start = workout.startDate
+//            let end = workout.endDate
+//            let device = workout.device?.name ?? ""
+//            let source = workout.sourceRevision.source.name
+//
+//            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
+//                let dictionary = [
+//                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
+//                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
+//                    ]
+//
+//                return dictionary
+//            })
+//
+//            return [
+//                "type": type,
+//                "duration": duration,
+//                "distance": distance,
+//                "energy": energy,
+//                "start_date_time_interval": start.timeIntervalSince1970,
+//                "end_date_time_interval": end.timeIntervalSince1970,
+//                "device_name": device,
+//                "source_name": source,
+//                "heart_rate_samples": hrSamples
+//            ]
+//        })
 
-        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
-            let type = workout.activityTypeString
-            let duration = workout.duration
-            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
-            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
-            let start = workout.startDate
-            let end = workout.endDate
-            let device = workout.device?.name ?? ""
-            let source = workout.sourceRevision.source.name
+        var data = [[String: Any]]()
 
-            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
-                let dictionary = [
-                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
-                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
-                    ]
-
-                return dictionary
-            })
-
-            return [
-                "type": type,
-                "duration": duration,
-                "distance": distance,
-                "energy": energy,
-                "start_date_time_interval": start.timeIntervalSince1970,
-                "end_date_time_interval": end.timeIntervalSince1970,
-                "device_name": device,
-                "source_name": source,
-                "heart_rate_samples": hrSamples
-            ]
-        })
-
-        self.apiClient.post(workouts: workoutsJSON, {
+        self.apiClient.post(data: data, {
             print("done")
         })
     }
@@ -253,17 +273,17 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.activeEnergy.keys.count
+        return self.distanceWalked.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.activeEnergy.count(for: section)
+        return self.distanceWalked.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
-        let sample = self.activeEnergy.item(at: indexPath)
+        let sample = self.distanceWalked.item(at: indexPath)
 
         let label: String
         let dateString: String
