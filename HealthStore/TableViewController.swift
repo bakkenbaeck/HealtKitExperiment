@@ -30,13 +30,29 @@ class TableViewController: SweetTableController {
 
     fileprivate var workouts = GroupedDataSource<Date, HKWorkout>() {
         didSet {
-//            DispatchQueue.main.async {
-//                self.tableView.reloadData()
-//            }
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
         }
     }
 
     fileprivate var steps = GroupedDataSource<Date, HKStatistics>() {
+        didSet {
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+    }
+
+    fileprivate var activeEnergy = GroupedDataSource<Date, HKStatistics>() {
+        didSet {
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+    }
+
+    fileprivate var basalEnergy = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
@@ -87,58 +103,30 @@ class TableViewController: SweetTableController {
     }
 
     private func updateActivities() {
-        let steps = GroupedDataSource<Date, HKStatistics>()
+        self.updateActiveEnergy()
+        self.updateBasalEnergy()
+        self.updateSteps()
+        self.updateWorkoutsWithHeartRateDate()
+    }
 
-        let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+    func updateBasalEnergy() {
+        let basalEnergyType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
 
-        let calendar = Calendar.autoupdatingCurrent
-
-        var anchorComponents = calendar.dateComponents([.day, .month, .year], from: Date())
-        anchorComponents.hour = 0
-        anchorComponents.year! -= 1
-
-        let anchorDate = calendar.date(from: anchorComponents)!
-
-        let intervalComponents = DateComponents(day: 1)
-
-        let stepsQuery = HKStatisticsCollectionQuery(quantityType: stepsCountType, quantitySamplePredicate: nil, options: [.cumulativeSum], anchorDate: anchorDate, intervalComponents: intervalComponents)
-
-        stepsQuery.initialResultsHandler = { query, statisticsCollection, error in
-            guard let statisticsCollection = statisticsCollection else { return }
-
-            let endDate = Date()
-            let startDate = anchorDate
-
-            statisticsCollection.enumerateStatistics(from: startDate, to: endDate, with: { statistics, stop in
-                let month = calendar.dateComponents([.month, .year, .calendar], from: statistics.startDate).date!
-                steps[month].insert(statistics, at: 0)
-            })
-
-            self.steps = steps
+        self.executeStatistcsQuery(for: basalEnergyType) { results in
+            self.basalEnergy = results
         }
+    }
 
-//            //= HKSampleQuery(sampleType: stepsCountType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
-//
-//            guard let samples = samples else { return }
-//
-//            let grouped = GroupedDataSource<Date, HKQuantitySample>()
-//            samples.reversed().forEach({ sample in
-//                if let sample = sample as? HKQuantitySample {
-//                    let calendar = Calendar.autoupdatingCurrent
-//                    let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
-//
-//                    let date = components.date!
-//
-//                    grouped[date].append(sample)
-//                }
-//            })
+    func updateActiveEnergy() {
+        let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
 
-//            self.steps = grouped
-//        }
+        self.executeStatistcsQuery(for: activeEnergyType) { results in
+            self.activeEnergy = results
+        }
+    }
 
-        self.healthStore.execute(stepsQuery)
-
-        let sampleQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+    func updateWorkoutsWithHeartRateDate() {
+        let workoutsQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
             guard error == nil else { return }
 
             if let samples = samples {
@@ -161,7 +149,47 @@ class TableViewController: SweetTableController {
             }
         }
 
-        self.healthStore.execute(sampleQuery)
+        self.healthStore.execute(workoutsQuery)
+    }
+
+    private func updateSteps() {
+        let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+
+        self.executeStatistcsQuery(for: stepsCountType) { results in
+            self.steps = results
+        }
+    }
+
+    private func executeStatistcsQuery(for quantityType: HKQuantityType, completion: @escaping ((GroupedDataSource<Date, HKStatistics>) -> Void)) {
+        let results = GroupedDataSource<Date, HKStatistics>()
+
+        let calendar = Calendar.autoupdatingCurrent
+
+        var anchorComponents = calendar.dateComponents([.day, .month, .year], from: Date())
+        anchorComponents.hour = 0
+        anchorComponents.year! -= 1
+
+        let anchorDate = calendar.date(from: anchorComponents)!
+
+        let intervalComponents = DateComponents(day: 1)
+
+        let statisticsCollectionQuery = HKStatisticsCollectionQuery(quantityType: quantityType, quantitySamplePredicate: nil, options: [.cumulativeSum], anchorDate: anchorDate, intervalComponents: intervalComponents)
+
+        statisticsCollectionQuery.initialResultsHandler = { query, statisticsCollection, error in
+            guard let statisticsCollection = statisticsCollection else { return }
+
+            let endDate = Date()
+            let startDate = anchorDate
+
+            statisticsCollection.enumerateStatistics(from: startDate, to: endDate, with: { statistics, stop in
+                let month = calendar.dateComponents([.month, .year, .calendar], from: statistics.startDate).date!
+                results[month].insert(statistics, at: 0)
+            })
+
+            completion(results)
+        }
+
+        self.healthStore.execute(statisticsCollectionQuery)
     }
 
     private func fetchHeartRateSamples(for workout: HKWorkout) {
@@ -193,8 +221,8 @@ class TableViewController: SweetTableController {
             let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
                 let dictionary = [
                     HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
-                                  "date_time_interval": hrSample.startDate.timeIntervalSince1970,
-                                  ]
+                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
+                    ]
 
                 return dictionary
             })
@@ -225,22 +253,22 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.steps.keys.count
+        return self.activeEnergy.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.steps.count(for: section)
+        return self.activeEnergy.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
-        let sample = self.steps.item(at: indexPath)
+        let sample = self.activeEnergy.item(at: indexPath)
 
         let label: String
         let dateString: String
         if let stepsStatistics = (sample as? HKStatistics), let sum = stepsStatistics.sumQuantity() {
-            label = "\( Int(ceil(sum.doubleValue(for: .count()))) ) steps"
+            label = String(describing: sum)
             dateString = self.dateFormatter.string(from: stepsStatistics.startDate)
         } else {
             label = ""
@@ -271,6 +299,6 @@ extension TableViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 80
+        return 60
     }
 }

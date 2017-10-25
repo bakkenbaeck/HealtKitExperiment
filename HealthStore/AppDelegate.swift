@@ -46,6 +46,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let readSet = Set([HKWorkoutType.workoutType(),
                            HKSeriesType.workoutRoute(),
                            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+                           HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
+                           HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
                            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
                            ])
 
