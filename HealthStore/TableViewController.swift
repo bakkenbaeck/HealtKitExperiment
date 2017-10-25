@@ -5,6 +5,26 @@ import MapKit
 import SweetUIKit
 import SweetSwift
 
+private var AssociatedObjectHandle: UInt8 = 0
+
+extension HKWorkout {
+
+    var heartRateSamples: [HKQuantitySample] {
+        get {
+            if let samples = objc_getAssociatedObject(self, &AssociatedObjectHandle) as? [HKQuantitySample] {
+                return samples
+            }
+
+            self.heartRateSamples = []
+
+            return []
+        }
+        set {
+            objc_setAssociatedObject(self, &AssociatedObjectHandle, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+}
+
 class TableViewController: SweetTableController {
     let apiClient = APIClient()
 
@@ -12,36 +32,6 @@ class TableViewController: SweetTableController {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
-
-                let workouts = self.samples.values
-                let workoutsJSON = workouts.flatMap({ sample -> [String: Any]? in
-                    guard let workout = sample as? HKWorkout else { return nil }
-
-                    let type = workout.activityTypeString
-                    let duration = workout.duration
-                    let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
-                    let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
-                    let start = workout.startDate
-                    let end = workout.endDate
-                    // let metadata = workout.metadata ?? [:]
-                    let device = workout.device?.name ?? ""
-                    let source = workout.sourceRevision.source.name
-
-                    return [
-                        "type": type,
-                        "duration": duration,
-                        "distance": distance,
-                        "energy": energy,
-                        "start_date_time_interval": start.timeIntervalSince1970,
-                        "end_date_time_interval": end.timeIntervalSince1970,
-                        "device_name": device,
-                        "source_name": source
-                        // "metadata": metadata,
-                    ]
-                })
-                self.apiClient.post(workouts: workoutsJSON, {
-                    print("done")
-                })
             }
         }
     }
@@ -70,6 +60,8 @@ class TableViewController: SweetTableController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .redo, target: self, action: #selector(self.uploadActivities))
+
         self.title = "Workouts"
 
         self.view.addSubview(self.tableView)
@@ -91,14 +83,24 @@ class TableViewController: SweetTableController {
             guard error == nil else { return }
 
             if let samples = samples {
-                let watchSamples = samples.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
+                let watchSamples = samples //.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
 
                 let grouped = GroupedDataSource<Date, HKSample>()
-                watchSamples.forEach({ sample in
+                watchSamples.reversed().forEach({ sample in
                     let calendar = Calendar.autoupdatingCurrent
                     let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
 
                     let date = components.date!
+
+                    let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
+                    let predicate = HKQuery.predicateForSamples(withStart: sample.startDate, end: sample.endDate, options: [])
+                    let hrQuery = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil, resultsHandler: { query, hrSamples, error in
+
+                        guard let hrSamples = hrSamples as? [HKQuantitySample], let workout = sample as? HKWorkout else { return }
+
+                        workout.heartRateSamples = hrSamples
+                    })
+                    self.healthStore.execute(hrQuery)
 
                     grouped[date].append(sample)
                 })
@@ -108,6 +110,50 @@ class TableViewController: SweetTableController {
         }
 
         self.healthStore.execute(sampleQuery)
+    }
+
+    @objc private func uploadActivities() {
+        let workouts = self.samples.values
+
+        let workoutsJSON = workouts.flatMap({ sample -> [String: Any]? in
+            guard let workout = sample as? HKWorkout else { return nil }
+
+            let type = workout.activityTypeString
+            let duration = workout.duration
+            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
+            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
+            let start = workout.startDate
+            let end = workout.endDate
+            // let metadata = workout.metadata ?? [:]
+            let device = workout.device?.name ?? ""
+            let source = workout.sourceRevision.source.name
+
+            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
+                let dictionary = [
+                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
+                                  "date_time_interval": hrSample.startDate.timeIntervalSince1970,
+                                  ]
+
+                return dictionary
+            })
+
+            return [
+                "type": type,
+                "duration": duration,
+                "distance": distance,
+                "energy": energy,
+                "start_date_time_interval": start.timeIntervalSince1970,
+                "end_date_time_interval": end.timeIntervalSince1970,
+                "device_name": device,
+                "source_name": source,
+                "heart_rate_samples": hrSamples
+                // "metadata": metadata,
+            ]
+        })
+
+        self.apiClient.post(workouts: workoutsJSON, {
+            print("done")
+        })
     }
 }
 
@@ -133,7 +179,7 @@ extension TableViewController: UITableViewDataSource {
         let label: String
         let dateString: String
         if let workout = (sample as? HKWorkout) {
-            label = "\(workout.activityTypeString) (\(self.dateComponentsFormatter.string(from: workout.duration) ?? "0s")) - \(workout.totalEnergyBurned ?? HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: .nan))"
+            label = "\(workout.activityTypeString) (\(self.dateComponentsFormatter.string(from: workout.duration) ?? "0s")) - \(workout.totalEnergyBurned ?? HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: 0.0))"
             dateString = self.dateFormatter.string(from: workout.startDate)
         } else {
             label = ""

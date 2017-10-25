@@ -44,7 +44,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     private func requestHealthAccessAuthorisationIfNeeded() {
         let readSet = Set([HKWorkoutType.workoutType(),
-                           HKSeriesType.workoutRoute(),])
+                           HKSeriesType.workoutRoute(),
+                           HKObjectType.quantityType(forIdentifier: .heartRate)!,
+                           ])
 
         self.healthStore.requestAuthorization(toShare: nil, read: readSet) { success, error in
             if let error = error {
