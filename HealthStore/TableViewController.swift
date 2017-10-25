@@ -36,7 +36,7 @@ class TableViewController: SweetTableController {
         }
     }
 
-    fileprivate var steps = GroupedDataSource<Date, HKQuantitySample>() {
+    fileprivate var steps = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
@@ -87,26 +87,54 @@ class TableViewController: SweetTableController {
     }
 
     private func updateActivities() {
+        let steps = GroupedDataSource<Date, HKStatistics>()
+
         let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
 
-        let stepsQuery = HKSampleQuery(sampleType: stepsCountType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+        let calendar = Calendar.autoupdatingCurrent
 
-            guard let samples = samples else { return }
+        var anchorComponents = calendar.dateComponents([.day, .month, .year], from: Date())
+        anchorComponents.hour = 0
+        anchorComponents.year! -= 1
 
-            let grouped = GroupedDataSource<Date, HKQuantitySample>()
-            samples.reversed().forEach({ sample in
-                if let sample = sample as? HKQuantitySample {
-                    let calendar = Calendar.autoupdatingCurrent
-                    let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
+        let anchorDate = calendar.date(from: anchorComponents)!
 
-                    let date = components.date!
+        let intervalComponents = DateComponents(day: 1)
 
-                    grouped[date].append(sample)
-                }
+        let stepsQuery = HKStatisticsCollectionQuery(quantityType: stepsCountType, quantitySamplePredicate: nil, options: [.cumulativeSum], anchorDate: anchorDate, intervalComponents: intervalComponents)
+
+        stepsQuery.initialResultsHandler = { query, statisticsCollection, error in
+            guard let statisticsCollection = statisticsCollection else { return }
+
+            let endDate = Date()
+            let startDate = anchorDate
+
+            statisticsCollection.enumerateStatistics(from: startDate, to: endDate, with: { statistics, stop in
+                let month = calendar.dateComponents([.month, .year, .calendar], from: statistics.startDate).date!
+                steps[month].insert(statistics, at: 0)
             })
 
-            self.steps = grouped
+            self.steps = steps
         }
+
+//            //= HKSampleQuery(sampleType: stepsCountType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+//
+//            guard let samples = samples else { return }
+//
+//            let grouped = GroupedDataSource<Date, HKQuantitySample>()
+//            samples.reversed().forEach({ sample in
+//                if let sample = sample as? HKQuantitySample {
+//                    let calendar = Calendar.autoupdatingCurrent
+//                    let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
+//
+//                    let date = components.date!
+//
+//                    grouped[date].append(sample)
+//                }
+//            })
+
+//            self.steps = grouped
+//        }
 
         self.healthStore.execute(stepsQuery)
 
@@ -197,11 +225,11 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.workouts.keys.count
+        return self.steps.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.workouts.count(for: section)
+        return self.steps.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -211,9 +239,9 @@ extension TableViewController: UITableViewDataSource {
 
         let label: String
         let dateString: String
-        if let quantitySample = (sample as? HKQuantitySample) {
-            label = "\(quantitySample.sampleType.identifier) - \(quantitySample.quantity)"
-            dateString = self.dateFormatter.string(from: quantitySample.startDate)
+        if let stepsStatistics = (sample as? HKStatistics), let sum = stepsStatistics.sumQuantity() {
+            label = "\( Int(ceil(sum.doubleValue(for: .count()))) ) steps"
+            dateString = self.dateFormatter.string(from: stepsStatistics.startDate)
         } else {
             label = ""
             dateString = ""
