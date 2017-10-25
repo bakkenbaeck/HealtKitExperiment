@@ -28,7 +28,15 @@ extension HKWorkout {
 class TableViewController: SweetTableController {
     let apiClient = APIClient()
 
-    fileprivate var samples = GroupedDataSource<Date, HKSample>() {
+    fileprivate var workouts = GroupedDataSource<Date, HKWorkout>() {
+        didSet {
+//            DispatchQueue.main.async {
+//                self.tableView.reloadData()
+//            }
+        }
+    }
+
+    fileprivate var steps = GroupedDataSource<Date, HKQuantitySample>() {
         didSet {
             DispatchQueue.main.async {
                 self.tableView.reloadData()
@@ -79,52 +87,78 @@ class TableViewController: SweetTableController {
     }
 
     private func updateActivities() {
+        let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+
+        let stepsQuery = HKSampleQuery(sampleType: stepsCountType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+
+            guard let samples = samples else { return }
+
+            let grouped = GroupedDataSource<Date, HKQuantitySample>()
+            samples.reversed().forEach({ sample in
+                if let sample = sample as? HKQuantitySample {
+                    let calendar = Calendar.autoupdatingCurrent
+                    let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
+
+                    let date = components.date!
+
+                    grouped[date].append(sample)
+                }
+            })
+
+            self.steps = grouped
+        }
+
+        self.healthStore.execute(stepsQuery)
+
         let sampleQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
             guard error == nil else { return }
 
             if let samples = samples {
                 let watchSamples = samples //.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
 
-                let grouped = GroupedDataSource<Date, HKSample>()
-                watchSamples.reversed().forEach({ sample in
-                    let calendar = Calendar.autoupdatingCurrent
-                    let components = calendar.dateComponents([.month, .year, .calendar], from: sample.startDate)
+                let grouped = GroupedDataSource<Date, HKWorkout>()
+                watchSamples.reversed().forEach({ watchSample in
+                    guard let workout = watchSample as? HKWorkout else { return }
 
+                    self.fetchHeartRateSamples(for: workout)
+
+                    let calendar = Calendar.autoupdatingCurrent
+                    let components = calendar.dateComponents([.month, .year, .calendar], from: workout.startDate)
                     let date = components.date!
 
-                    let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
-                    let predicate = HKQuery.predicateForSamples(withStart: sample.startDate, end: sample.endDate, options: [])
-                    let hrQuery = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil, resultsHandler: { query, hrSamples, error in
-
-                        guard let hrSamples = hrSamples as? [HKQuantitySample], let workout = sample as? HKWorkout else { return }
-
-                        workout.heartRateSamples = hrSamples
-                    })
-                    self.healthStore.execute(hrQuery)
-
-                    grouped[date].append(sample)
+                    grouped[date].append(workout)
                 })
 
-                self.samples = grouped
+                self.workouts = grouped
             }
         }
 
         self.healthStore.execute(sampleQuery)
     }
 
+    private func fetchHeartRateSamples(for workout: HKWorkout) {
+        let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate)!
+        let predicate = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: [])
+        let hrQuery = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil, resultsHandler: { query, hrSamples, error in
+
+            guard let hrSamples = hrSamples as? [HKQuantitySample] else { return }
+
+            workout.heartRateSamples = hrSamples
+        })
+
+        self.healthStore.execute(hrQuery)
+    }
+
     @objc private func uploadActivities() {
-        let workouts = self.samples.values
+        let workouts = self.workouts.values
 
-        let workoutsJSON = workouts.flatMap({ sample -> [String: Any]? in
-            guard let workout = sample as? HKWorkout else { return nil }
-
+        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
             let type = workout.activityTypeString
             let duration = workout.duration
             let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
             let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
             let start = workout.startDate
             let end = workout.endDate
-            // let metadata = workout.metadata ?? [:]
             let device = workout.device?.name ?? ""
             let source = workout.sourceRevision.source.name
 
@@ -147,7 +181,6 @@ class TableViewController: SweetTableController {
                 "device_name": device,
                 "source_name": source,
                 "heart_rate_samples": hrSamples
-                // "metadata": metadata,
             ]
         })
 
@@ -164,23 +197,23 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.samples.keys.count
+        return self.workouts.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.samples.count(for: section)
+        return self.workouts.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
-        let sample = self.samples.item(at: indexPath)
+        let sample = self.steps.item(at: indexPath)
 
         let label: String
         let dateString: String
-        if let workout = (sample as? HKWorkout) {
-            label = "\(workout.activityTypeString) (\(self.dateComponentsFormatter.string(from: workout.duration) ?? "0s")) - \(workout.totalEnergyBurned ?? HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: 0.0))"
-            dateString = self.dateFormatter.string(from: workout.startDate)
+        if let quantitySample = (sample as? HKQuantitySample) {
+            label = "\(quantitySample.sampleType.identifier) - \(quantitySample.quantity)"
+            dateString = self.dateFormatter.string(from: quantitySample.startDate)
         } else {
             label = ""
             dateString = ""
@@ -202,7 +235,7 @@ extension TableViewController: UITableViewDataSource {
 
         let df = DateFormatter()
         df.dateFormat = "MMMM yyyy"
-        label.text = df.string(from: self.samples.reversedSortedKeys[section])
+        label.text = df.string(from: self.workouts.reversedSortedKeys[section])
         label.font = .boldSystemFont(ofSize: 24)
         label.textColor = .blue
 

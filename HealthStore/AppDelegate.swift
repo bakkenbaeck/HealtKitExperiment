@@ -46,6 +46,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let readSet = Set([HKWorkoutType.workoutType(),
                            HKSeriesType.workoutRoute(),
                            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+                           HKQuantityType.quantityType(forIdentifier: .stepCount)!,
                            ])
 
         self.healthStore.requestAuthorization(toShare: nil, read: readSet) { success, error in
