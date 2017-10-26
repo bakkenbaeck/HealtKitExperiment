@@ -44,7 +44,6 @@ class TableViewController: SweetTableController {
     fileprivate var coalescedEnergy = GroupedDataSource<Date, Energy>() {
         didSet {
             DispatchQueue.main.async {
-                print("Did coalesce energy data.")
                 self.tableView.reloadData()
 
                 self.coalesceData()
@@ -155,6 +154,7 @@ class TableViewController: SweetTableController {
             // we can remove the items as we find them, significantly reducing time necessary
             // to handle all this data.
 
+            var energyArray = self.coalescedEnergy.values
             var stepsArray = self.steps.values
             var sleepArray = self.sleepAnalysis
             var distanceWalkedArray = self.distanceWalked.values
@@ -162,6 +162,13 @@ class TableViewController: SweetTableController {
             for date in dateSet.sorted().reversed() {
                 let dateData = DayData(date: date)
 
+                for (index, energy) in energyArray.enumerated() {
+                    if calendar.isDate(energy.basalDataPoint.startDate, inSameDayAs: date) {
+                        dateData.energy = energy
+                        energyArray.remove(at: index)
+                        break
+                    }
+                }
 
 
                 for (index, steps) in stepsArray.enumerated() {
@@ -234,32 +241,34 @@ class TableViewController: SweetTableController {
         let calendar = Calendar.autoupdatingCurrent
         let coalescedEnergy = GroupedDataSource<Date, Energy>()
 
-        // We have days where there's basal energy but no active energy.
-        // But there's no way to have active and not basal.
-        // Go through every basal energy entry. Get each month:
-        for month in basalEnergy.keys {
-            // then each individual day with data
-            for basalDataPoint in basalEnergy[month] {
-                // Skip days where we have no basal data.
-                guard basalDataPoint.sumQuantity() != nil else { continue }
+        printTimeElapsedWhenRunningCode(title: "energy coalescing") {
+            // We have days where there's basal energy but no active energy.
+            // But there's no way to have active and not basal.
+            // Go through every basal energy entry. Get each month:
+            for month in basalEnergy.keys {
+                // then each individual day with data
+                for basalDataPoint in basalEnergy[month] {
+                    // Skip days where we have no basal data.
+                    guard basalDataPoint.sumQuantity() != nil else { continue }
 
-                // Look for the active data point in the same day as the basal data.
-                let activeDataPoints = activeEnergy[month].filter({ statistics -> Bool in
-                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
-                })
+                    // Look for the active data point in the same day as the basal data.
+                    let activeDataPoints = activeEnergy[month].filter({ statistics -> Bool in
+                        return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
+                    })
 
-                // If we find more then one, something went wrong in our statistics query.
-                if activeDataPoints.count > 1 {
-                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
-                }
+                    // If we find more then one, something went wrong in our statistics query.
+                    if activeDataPoints.count > 1 {
+                        fatalError("Something went wrong. Statistics should be broken down by the same day.")
+                    }
 
-                // If there's no active data, set Energy with basal only.
-                // Still grouped by months
-                if activeDataPoints.isEmpty {
-                    coalescedEnergy[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
-                } else if let activeDataPoint = activeDataPoints.first  {
-                    // If there is active energy data, add them both up.
-                    coalescedEnergy[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
+                    // If there's no active data, set Energy with basal only.
+                    // Still grouped by months
+                    if activeDataPoints.isEmpty {
+                        coalescedEnergy[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
+                    } else if let activeDataPoint = activeDataPoints.first  {
+                        // If there is active energy data, add them both up.
+                        coalescedEnergy[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
+                    }
                 }
             }
         }
