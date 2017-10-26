@@ -36,9 +36,16 @@ class TableViewController: SweetTableController {
         }
     }
 
+    fileprivate var sleepAnalysis = [SleepAnalysis]() {
+        didSet {
+            print("Did update sleep analysis.")
+        }
+    }
+
     fileprivate var steps = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
+                print("Did update step count")
                 self.tableView.reloadData()
             }
         }
@@ -65,6 +72,7 @@ class TableViewController: SweetTableController {
     fileprivate var coalescedEnergy = GroupedDataSource<Date, Energy>() {
         didSet {
             DispatchQueue.main.async {
+                print("Did coalesce energy data.")
                 self.tableView.reloadData()
             }
         }
@@ -74,6 +82,7 @@ class TableViewController: SweetTableController {
     fileprivate var distanceWalked = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
+                print("Did update running/walking distances.")
                 self.tableView.reloadData()
             }
         }
@@ -122,33 +131,13 @@ class TableViewController: SweetTableController {
     }
 
     private func updateActivities() {
+        self.updateSleepAnalysis()
         self.updateActiveEnergy()
         self.updateBasalEnergy()
         self.updateSteps()
         self.updateWalkingDistance()
 
         // self.updateWorkoutsWithHeartRateDate()
-    }
-
-    class Energy: NSObject {
-        let activeDataPoint: HKStatistics?
-        let basalDataPoint: HKStatistics
-
-        var totalEnergy: HKQuantity {
-            let kcal: HKUnit = .kilocalorie()
-
-            let basal = self.basalDataPoint.sumQuantity()?.doubleValue(for: kcal) ?? 0.0
-            let active = self.activeDataPoint?.sumQuantity()?.doubleValue(for: kcal) ?? 0.0
-
-            let sum = basal + active
-
-            return HKQuantity(unit: kcal, doubleValue: sum)
-        }
-
-        init(activeDataPoint: HKStatistics? = nil, basalDataPoint: HKStatistics) {
-            self.activeDataPoint = activeDataPoint
-            self.basalDataPoint = basalDataPoint
-        }
     }
 
     private func coalesceData() {
@@ -187,6 +176,23 @@ class TableViewController: SweetTableController {
         }
 
         self.coalescedEnergy = coalescedData
+    }
+
+    private func updateSleepAnalysis() {
+        let sleepAnalysisType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!
+
+        let sleepAnalysisQuery = HKSampleQuery(sampleType: sleepAnalysisType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+
+            guard let samples = samples else { return }
+
+            self.sleepAnalysis = samples.flatMap { sample -> SleepAnalysis? in
+                guard let sample = sample as? HKCategorySample else { return nil }
+
+                return SleepAnalysis(state: HKCategoryValueSleepAnalysis(rawValue: sample.value)!, startDate: sample.startDate, endDate: sample.endDate)
+            }
+        }
+
+        self.healthStore.execute(sleepAnalysisQuery)
     }
 
     private func updateWalkingDistance() {
@@ -328,7 +334,20 @@ class TableViewController: SweetTableController {
 //            ]
 //        })
 
-        var data = [[String: Any]]()
+        var data = [String: [[String: Any]]]()
+
+//        data["energy"] = [[String: Any]]()
+//        for energy in self.coalescedEnergy.values {
+//            let timeinterval = energy.basalDataPoint.startDate.timeIntervalSince1970
+//            let basalKcal = energy.basalDataPoint.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
+//            let activeKcal = energy.activeDataPoint?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
+//
+//            data["energy"]?.append([
+//                "basal_energy_burned": basalKcal,
+//                "active_energy_burned": activeKcal,
+//                "time_interval": timeinterval
+//            ])
+//        }
 
         self.apiClient.post(data: data, {
             print("done")
