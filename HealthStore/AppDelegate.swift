@@ -12,7 +12,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.requestHealthAccessAuthorisationIfNeeded()
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        window.rootViewController = UINavigationController(rootViewController: TableViewController())
+        window.rootViewController = UINavigationController(rootViewController: MainViewController())
         window.makeKeyAndVisible()
 
         self.window = window

@@ -4,11 +4,11 @@ import Foundation
 class APIClient {
     let teapot = Teapot(baseURL: URL(string: "https://sync:sync@health-sync.testwerk.org")!)
 
-    func post(data: [[String: Any]], _ completion: (() -> Void)) {
+    func post(username: String, data: [[String: Any]], _ completion: (() -> Void)) {
         let path =  "/"
 
         // replace username to yours for now manually from code.
-        let parameters = RequestParameter(["username": "august", "data": data])
+        let parameters = RequestParameter(["username": username, "data": data])
 
         self.teapot.post(path, parameters: parameters) { result in
             switch result {

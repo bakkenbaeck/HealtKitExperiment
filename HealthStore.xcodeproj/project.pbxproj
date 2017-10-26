@@ -23,7 +23,7 @@
 		9F898E451F9F53660090ADF0 /* GorupedDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F898E441F9F53660090ADF0 /* GorupedDataSource.swift */; };
 		9F898E461F9F67D00090ADF0 /* SweetSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9FBCA1171F9DF3BF00BFDF47 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */; };
-		9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */; };
+		9FBCA1191F9DF3BF00BFDF47 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBCA1181F9DF3BF00BFDF47 /* MainViewController.swift */; };
 		9FBCA11E1F9DF3BF00BFDF47 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */; };
 		9FBCA1211F9DF3BF00BFDF47 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9FBCA11F1F9DF3BF00BFDF47 /* LaunchScreen.storyboard */; };
 		9FBCA12B1F9DF4EC00BFDF47 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9FBCA12A1F9DF4EC00BFDF47 /* HealthKit.framework */; };
@@ -60,7 +60,7 @@
 		9F898E441F9F53660090ADF0 /* GorupedDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GorupedDataSource.swift; sourceTree = "<group>"; };
 		9FBCA1131F9DF3BF00BFDF47 /* HealthStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewController.swift; sourceTree = "<group>"; };
+		9FBCA1181F9DF3BF00BFDF47 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		9FBCA11D1F9DF3BF00BFDF47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9FBCA1201F9DF3BF00BFDF47 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9FBCA1221F9DF3BF00BFDF47 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -105,7 +105,7 @@
 			children = (
 				9FBCA1281F9DF4EC00BFDF47 /* HealthStore.entitlements */,
 				9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */,
-				9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */,
+				9FBCA1181F9DF3BF00BFDF47 /* MainViewController.swift */,
 				9F1C2DA51FA1DFE5008F3E91 /* Workout+HeartRate.swift */,
 				9F1C2DA11FA1D896008F3E91 /* Energy.swift */,
 				9F1C2DA31FA1D8A4008F3E91 /* Sleep.swift */,
@@ -211,7 +211,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F1C2DA61FA1DFE5008F3E91 /* Workout+HeartRate.swift in Sources */,
-				9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */,
+				9FBCA1191F9DF3BF00BFDF47 /* MainViewController.swift in Sources */,
 				9F1C2DA21FA1D896008F3E91 /* Energy.swift in Sources */,
 				9F4E8FAC1F9F7FE300BE824C /* APIClient.swift in Sources */,
 				9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */,

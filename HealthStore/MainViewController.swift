@@ -5,24 +5,35 @@ import MapKit
 import SweetUIKit
 import SweetSwift
 
-class TableViewController: SweetTableController {
+class MainViewController: UIViewController {
     let apiClient = APIClient()
 
-//    fileprivate var workouts = GroupedDataSource<Date, HKWorkout>() {
-//        didSet {
-//            DispatchQueue.main.async {
-//                self.tableView.reloadData()
-//            }
-//        }
-//    }
+    fileprivate lazy var uploadButton: UIButton = {
+        let button = UIButton(withAutoLayout: true)
+
+        button.setImage(#imageLiteral(resourceName: "upload"), for: .normal)
+        button.addTarget(self, action: #selector(self.uploadActivities), for: .touchUpInside)
+        button.set(height: 60)
+        button.set(width: 90)
+
+        return button
+    }()
 
     fileprivate lazy var loadingIndicator: UIActivityIndicatorView = {
         let view = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge)
 
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.hidesWhenStopped = true
-        view.tintColor = .blue
-        view.startAnimating()
+        view.color = .blue
+
+        return view
+    }()
+
+    fileprivate lazy var explanationLabel: UILabel = {
+        let view = UILabel(withAutoLayout: true)
+
+        view.font = .systemFont(ofSize: 24)
+        view.numberOfLines = 0
+        view.text = "Welcome to HealthStore. After we're finished loading, feel free to hit the big blue button to send all your 🔐 private 🔐 health data to our servers."
 
         return view
     }()
@@ -30,8 +41,6 @@ class TableViewController: SweetTableController {
     fileprivate var dayData = [DayData]() {
         didSet {
             DispatchQueue.main.async {
-                self.tableView.reloadData()
-
                 self.loadingIndicator.stopAnimating()
             }
         }
@@ -47,7 +56,6 @@ class TableViewController: SweetTableController {
         didSet {
 //            DispatchQueue.main.async {
 //                print("Did update step count")
-//                self.tableView.reloadData()
 //            }
         }
     }
@@ -64,7 +72,6 @@ class TableViewController: SweetTableController {
         didSet {
 //            DispatchQueue.main.async {
 //                print("Did update running/walking distances.")
-//                self.tableView.reloadData()
 //            }
         }
     }
@@ -93,27 +100,35 @@ class TableViewController: SweetTableController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(self.uploadActivities))
-
         self.title = "HealthStore"
 
-        self.view.addSubview(self.tableView)
+        self.view.backgroundColor = .white
+        self.view.addSubview(self.explanationLabel)
+        self.view.addSubview(self.uploadButton)
         self.view.addSubview(self.loadingIndicator)
 
+        self.uploadButton.centerXAnchor.constraint(equalTo: self.view.centerXAnchor).isActive = true
+        self.uploadButton.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor, constant: 60).isActive = true
+
+        self.explanationLabel.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -60).isActive = true
+        self.explanationLabel.topAnchor.constraint(equalTo: self.uploadButton.bottomAnchor, constant: 60).isActive = true
+        self.explanationLabel.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 24).isActive = true
+        self.explanationLabel.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -24).isActive = true
+
         self.loadingIndicator.centerXAnchor.constraint(equalTo: self.view.centerXAnchor).isActive = true
-        self.loadingIndicator.centerYAnchor.constraint(equalTo: self.view.centerYAnchor).isActive = true
-
-        self.tableView.fillSuperview()
-
-        self.tableView.delegate = self
-        self.tableView.dataSource = self
-        self.tableView.register(SampleCell.self)
+        self.loadingIndicator.centerYAnchor.constraint(equalTo: self.view.centerYAnchor, constant: -60).isActive = true
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
         self.updateActivities()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        self.loadingIndicator.startAnimating()
     }
 
     private func updateActivities() {
@@ -408,53 +423,9 @@ class TableViewController: SweetTableController {
             data.append(dayData.asJSON)
         })
 
-        self.apiClient.post(data: data, {
+        self.apiClient.post(username: "tester", data: data, {
             print("done")
         })
     }
 }
 
-extension TableViewController: UITableViewDelegate {
-
-}
-
-extension TableViewController: UITableViewDataSource {
-
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.dayData.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeue(SampleCell.self, for: indexPath)
-
-        let dayData = self.dayData[indexPath.row]
-        cell.title = dayData.asString
-
-        return cell
-    }
-
-//    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-//        let view = UIView()
-//        view.backgroundColor = UIColor.white.withAlphaComponent(0.8)
-//
-//        let label = UILabel(withAutoLayout: true)
-//        view.addSubview(label)
-//        label.fillSuperview(with: UIEdgeInsets(top: 24, left: 12, bottom: 0, right: 12))
-//
-//        let df = DateFormatter()
-//        df.dateFormat = "MMMM yyyy"
-//        label.text = df.string(from: self.coaledascedEnergy.reversedSortedKeys[section])
-//        label.font = .boldSystemFont(ofSize: 24)
-//        label.textColor = .blue
-//
-//        return view
-//    }
-
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 80
-    }
-}
