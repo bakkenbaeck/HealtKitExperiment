@@ -41,33 +41,16 @@ class TableViewController: SweetTableController {
         }
     }
 
-    fileprivate var activeEnergy = GroupedDataSource<Date, HKStatistics>() {
-        didSet {
-            DispatchQueue.main.async {
-                self.coalesceData()
-                self.tableView.reloadData()
-            }
-        }
-    }
-
-    fileprivate var basalEnergy = GroupedDataSource<Date, HKStatistics>() {
-        didSet {
-            DispatchQueue.main.async {
-                self.coalesceData()
-                self.tableView.reloadData()
-            }
-        }
-    }
-
     fileprivate var coalescedEnergy = GroupedDataSource<Date, Energy>() {
         didSet {
             DispatchQueue.main.async {
                 print("Did coalesce energy data.")
                 self.tableView.reloadData()
+
+                self.coalesceData()
             }
         }
     }
-
 
     fileprivate var distanceWalked = GroupedDataSource<Date, HKStatistics>() {
         didSet {
@@ -122,8 +105,7 @@ class TableViewController: SweetTableController {
 
     private func updateActivities() {
         self.updateSleepAnalysis()
-        self.updateActiveEnergy()
-        self.updateBasalEnergy()
+        self.updateEnergy()
         self.updateSteps()
         self.updateWalkingDistance()
 
@@ -131,72 +113,84 @@ class TableViewController: SweetTableController {
     }
 
     private func coalesceData() {
-        let coalescedData = GroupedDataSource<Date, AnyHashable>()
         let calendar = Calendar.autoupdatingCurrent
 
-        // fetch all days with data
-        let basalEnergyDates = self.basalEnergy.values.reversed().map({ statistics -> Date in
-            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
-            dateComponents.hour = 0
-
-            return dateComponents.date!
-        })
-        let activeEnergyDates = self.activeEnergy.values.reversed().map({ statistics -> Date in
-            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
-            dateComponents.hour = 0
-
-            return dateComponents.date!
-        })
-        let sleepDates = self.sleepAnalysis.reversed().map({ analysis -> Date in
-            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: analysis.endDate)
-            dateComponents.hour = 0
-
-            return dateComponents.date!
-        })
-        let stepsDates = self.steps.values.reversed().map({ statistics -> Date in
-            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
-            dateComponents.hour = 0
-
-            return dateComponents.date!
-        })
-        let distanceDates = self.distanceWalked.values.reversed().map({ statistics -> Date in
-            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
-            dateComponents.hour = 0
-
-            return dateComponents.date!
-        })
-
-        // Dedupe all dates
-        var dateSet = Set<Date>()
-        dateSet.formUnion(basalEnergyDates)
-        dateSet.formUnion(activeEnergyDates)
-        dateSet.formUnion(sleepDates)
-        dateSet.formUnion(stepsDates)
-        dateSet.formUnion(distanceDates)
-
-        var dayData: [DayData] = []
-
         printTimeElapsedWhenRunningCode(title: "coalescing") {
+            // fetch all days with data
+            let energyDates = self.coalescedEnergy.values.map({ statistics -> Date in
+                var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.basalDataPoint.startDate)
+                dateComponents.hour = 0
+
+                return dateComponents.date!
+            })
+
+            let sleepDates = self.sleepAnalysis.map({ analysis -> Date in
+                var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: analysis.endDate)
+                dateComponents.hour = 0
+
+                return dateComponents.date!
+            })
+            let stepsDates = self.steps.values.map({ statistics -> Date in
+                var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+                dateComponents.hour = 0
+
+                return dateComponents.date!
+            })
+            let distanceDates = self.distanceWalked.values.map({ statistics -> Date in
+                var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+                dateComponents.hour = 0
+
+                return dateComponents.date!
+            })
+
+            // Dedupe all dates
+            var dateSet = Set<Date>()
+            dateSet.formUnion(energyDates)
+            dateSet.formUnion(sleepDates)
+            dateSet.formUnion(stepsDates)
+            dateSet.formUnion(distanceDates)
+
+            var dayData: [DayData] = []
+            // By storing the data we have to sort through in var arrays
+            // we can remove the items as we find them, significantly reducing time necessary
+            // to handle all this data.
+
+            var stepsArray = self.steps.values
+            var sleepArray = self.sleepAnalysis
+            var distanceWalkedArray = self.distanceWalked.values
 
             for date in dateSet.sorted().reversed() {
-                let basalEnergy = self.basalEnergy.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
-                let activeEnergy = self.activeEnergy.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
-                let steps = self.steps.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
-                let sleep = self.sleepAnalysis.filter({ item -> Bool in return calendar.isDate(item.endDate, inSameDayAs: date) }).first
-                let distance = self.distanceWalked.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
+                let dateData = DayData(date: date)
 
-                var energy: Energy? = nil
-                if let basalEnergy = basalEnergy {
-                    energy = Energy(activeDataPoint: activeEnergy, basalDataPoint: basalEnergy)
+
+
+                for (index, steps) in stepsArray.enumerated() {
+                    if calendar.isDate(steps.startDate, inSameDayAs: date) {
+                        dateData.steps = steps
+                        stepsArray.remove(at: index)
+                        break
+                    }
                 }
 
-                dayData.append(DayData(date: date, sleep: sleep, steps: steps, energy: energy, distance: distance))
+                for (index, sleep) in sleepArray.enumerated() {
+                    if calendar.isDate(sleep.endDate, inSameDayAs: date) {
+                        dateData.sleep = sleep
+                        sleepArray.remove(at: index)
+                        break
+                    }
+                }
+
+                for (index, distance) in distanceWalkedArray.enumerated() {
+                    if calendar.isDate(distance.startDate, inSameDayAs: date) {
+                        dateData.distance = distance
+                        distanceWalkedArray.remove(at: index)
+                        break
+                    }
+                }
+
+                dayData.append(dateData)
             }
-
-            // print(dayData)
         }
-
-        // self.coalescedEnergy = coalescedData
     }
 
     private func updateSleepAnalysis() {
@@ -224,20 +218,53 @@ class TableViewController: SweetTableController {
         }
     }
 
-    private func updateBasalEnergy() {
+    private func updateEnergy() {
         let basalEnergyType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
 
-        self.executeStatistcsQuery(for: basalEnergyType) { results in
-            self.basalEnergy = results
+        self.executeStatistcsQuery(for: basalEnergyType) { basalEnergy in
+            let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+
+            self.executeStatistcsQuery(for: activeEnergyType) { activeEnergy in
+                self.coalesceEnergy(basalEnergy: basalEnergy, activeEnergy: activeEnergy)
+            }
         }
     }
 
-    private func updateActiveEnergy() {
-        let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+    private func coalesceEnergy(basalEnergy: GroupedDataSource<Date, HKStatistics>, activeEnergy: GroupedDataSource<Date, HKStatistics>) {
+        let calendar = Calendar.autoupdatingCurrent
+        let coalescedEnergy = GroupedDataSource<Date, Energy>()
 
-        self.executeStatistcsQuery(for: activeEnergyType) { results in
-            self.activeEnergy = results
+        // We have days where there's basal energy but no active energy.
+        // But there's no way to have active and not basal.
+        // Go through every basal energy entry. Get each month:
+        for month in basalEnergy.keys {
+            // then each individual day with data
+            for basalDataPoint in basalEnergy[month] {
+                // Skip days where we have no basal data.
+                guard basalDataPoint.sumQuantity() != nil else { continue }
+
+                // Look for the active data point in the same day as the basal data.
+                let activeDataPoints = activeEnergy[month].filter({ statistics -> Bool in
+                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
+                })
+
+                // If we find more then one, something went wrong in our statistics query.
+                if activeDataPoints.count > 1 {
+                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
+                }
+
+                // If there's no active data, set Energy with basal only.
+                // Still grouped by months
+                if activeDataPoints.isEmpty {
+                    coalescedEnergy[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
+                } else if let activeDataPoint = activeDataPoints.first  {
+                    // If there is active energy data, add them both up.
+                    coalescedEnergy[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
+                }
+            }
         }
+
+        self.coalescedEnergy = coalescedEnergy
     }
 
     private func updateWorkoutsWithHeartRateDate() {
