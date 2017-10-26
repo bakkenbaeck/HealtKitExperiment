@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		9F1C2DA21FA1D896008F3E91 /* Energy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1C2DA11FA1D896008F3E91 /* Energy.swift */; };
 		9F1C2DA41FA1D8A4008F3E91 /* Sleep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1C2DA31FA1D8A4008F3E91 /* Sleep.swift */; };
+		9F1C2DA61FA1DFE5008F3E91 /* Workout+HeartRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1C2DA51FA1DFE5008F3E91 /* Workout+HeartRate.swift */; };
+		9F1C2DA81FA1E4EF008F3E91 /* DayData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1C2DA71FA1E4EF008F3E91 /* DayData.swift */; };
 		9F2D2B6A1F9F2B3600E9C8F6 /* SweetUIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */; };
 		9F2D2B6B1F9F2B3600E9C8F6 /* SweetSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */; };
 		9F2D2B6C1F9F2B5100E9C8F6 /* SweetUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -46,6 +48,8 @@
 /* Begin PBXFileReference section */
 		9F1C2DA11FA1D896008F3E91 /* Energy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Energy.swift; sourceTree = "<group>"; };
 		9F1C2DA31FA1D8A4008F3E91 /* Sleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sleep.swift; sourceTree = "<group>"; };
+		9F1C2DA51FA1DFE5008F3E91 /* Workout+HeartRate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workout+HeartRate.swift"; sourceTree = "<group>"; };
+		9F1C2DA71FA1E4EF008F3E91 /* DayData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayData.swift; sourceTree = "<group>"; };
 		9F2D2B681F9F2B3600E9C8F6 /* SweetUIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetUIKit.framework; path = Carthage/Build/iOS/SweetUIKit.framework; sourceTree = "<group>"; };
 		9F2D2B691F9F2B3600E9C8F6 /* SweetSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SweetSwift.framework; path = Carthage/Build/iOS/SweetSwift.framework; sourceTree = "<group>"; };
 		9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCell.swift; sourceTree = "<group>"; };
@@ -102,8 +106,10 @@
 				9FBCA1281F9DF4EC00BFDF47 /* HealthStore.entitlements */,
 				9FBCA1161F9DF3BF00BFDF47 /* AppDelegate.swift */,
 				9FBCA1181F9DF3BF00BFDF47 /* TableViewController.swift */,
+				9F1C2DA51FA1DFE5008F3E91 /* Workout+HeartRate.swift */,
 				9F1C2DA11FA1D896008F3E91 /* Energy.swift */,
 				9F1C2DA31FA1D8A4008F3E91 /* Sleep.swift */,
+				9F1C2DA71FA1E4EF008F3E91 /* DayData.swift */,
 				9F898E441F9F53660090ADF0 /* GorupedDataSource.swift */,
 				9F898E421F9F46580090ADF0 /* HKWorkout+TypeString.swift */,
 				9F2D2B6D1F9F37B700E9C8F6 /* SampleCell.swift */,
@@ -204,12 +210,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F1C2DA61FA1DFE5008F3E91 /* Workout+HeartRate.swift in Sources */,
 				9FBCA1191F9DF3BF00BFDF47 /* TableViewController.swift in Sources */,
 				9F1C2DA21FA1D896008F3E91 /* Energy.swift in Sources */,
 				9F4E8FAC1F9F7FE300BE824C /* APIClient.swift in Sources */,
 				9F2D2B6E1F9F37B700E9C8F6 /* SampleCell.swift in Sources */,
 				9FBCA1171F9DF3BF00BFDF47 /* AppDelegate.swift in Sources */,
 				9F898E431F9F46580090ADF0 /* HKWorkout+TypeString.swift in Sources */,
+				9F1C2DA81FA1E4EF008F3E91 /* DayData.swift in Sources */,
 				9F4E8FA71F9F7D6400BE824C /* UIColor+Random.swift in Sources */,
 				9F898E451F9F53660090ADF0 /* GorupedDataSource.swift in Sources */,
 				9F1C2DA41FA1D8A4008F3E91 /* Sleep.swift in Sources */,

@@ -5,24 +5,14 @@ import MapKit
 import SweetUIKit
 import SweetSwift
 
-private var AssociatedObjectHandle: UInt8 = 0
+func printTimeElapsedWhenRunningCode(title:String, operation: () -> ()) {
+    let startTime = CFAbsoluteTimeGetCurrent()
 
-extension HKWorkout {
+    operation()
 
-    var heartRateSamples: [HKQuantitySample] {
-        get {
-            if let samples = objc_getAssociatedObject(self, &AssociatedObjectHandle) as? [HKQuantitySample] {
-                return samples
-            }
+    let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
 
-            self.heartRateSamples = []
-
-            return []
-        }
-        set {
-            objc_setAssociatedObject(self, &AssociatedObjectHandle, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
-    }
+    print("Time elapsed for \(title): \(timeElapsed) s.")
 }
 
 class TableViewController: SweetTableController {
@@ -141,41 +131,72 @@ class TableViewController: SweetTableController {
     }
 
     private func coalesceData() {
-        let coalescedData = GroupedDataSource<Date, Energy>()
+        let coalescedData = GroupedDataSource<Date, AnyHashable>()
         let calendar = Calendar.autoupdatingCurrent
 
-        // We have days where there's basal energy but no active energy.
-        // But there's no way to have active and not basal.
+        // fetch all days with data
+        let basalEnergyDates = self.basalEnergy.values.reversed().map({ statistics -> Date in
+            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+            dateComponents.hour = 0
 
-        // Go through every basal energy entry. Get each month:
-        for month in self.basalEnergy.keys {
-            // then each individual day with data
-            for basalDataPoint in self.basalEnergy[month] {
-                // Skip days where we have no basal data.
-                guard basalDataPoint.sumQuantity() != nil else { continue }
+            return dateComponents.date!
+        })
+        let activeEnergyDates = self.activeEnergy.values.reversed().map({ statistics -> Date in
+            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+            dateComponents.hour = 0
 
-                // Look for the active data point in the same day as the basal data.
-                let activeDataPoints = self.activeEnergy[month].filter({ statistics -> Bool in
-                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
-                })
+            return dateComponents.date!
+        })
+        let sleepDates = self.sleepAnalysis.reversed().map({ analysis -> Date in
+            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: analysis.endDate)
+            dateComponents.hour = 0
 
-                // If we find more then one, something went wrong in our statistics query.
-                if activeDataPoints.count > 1 {
-                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
+            return dateComponents.date!
+        })
+        let stepsDates = self.steps.values.reversed().map({ statistics -> Date in
+            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+            dateComponents.hour = 0
+
+            return dateComponents.date!
+        })
+        let distanceDates = self.distanceWalked.values.reversed().map({ statistics -> Date in
+            var dateComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: statistics.startDate)
+            dateComponents.hour = 0
+
+            return dateComponents.date!
+        })
+
+        // Dedupe all dates
+        var dateSet = Set<Date>()
+        dateSet.formUnion(basalEnergyDates)
+        dateSet.formUnion(activeEnergyDates)
+        dateSet.formUnion(sleepDates)
+        dateSet.formUnion(stepsDates)
+        dateSet.formUnion(distanceDates)
+
+        var dayData: [DayData] = []
+
+        printTimeElapsedWhenRunningCode(title: "coalescing") {
+
+            for date in dateSet.sorted().reversed() {
+                let basalEnergy = self.basalEnergy.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
+                let activeEnergy = self.activeEnergy.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
+                let steps = self.steps.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
+                let sleep = self.sleepAnalysis.filter({ item -> Bool in return calendar.isDate(item.endDate, inSameDayAs: date) }).first
+                let distance = self.distanceWalked.values.filter({ item -> Bool in return calendar.isDate(item.startDate, inSameDayAs: date) }).first
+
+                var energy: Energy? = nil
+                if let basalEnergy = basalEnergy {
+                    energy = Energy(activeDataPoint: activeEnergy, basalDataPoint: basalEnergy)
                 }
 
-                // If there's no active data, set Energy with basal only.
-                // Still grouped by months
-                if activeDataPoints.isEmpty {
-                    coalescedData[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
-                } else if let activeDataPoint = activeDataPoints.first  {
-                    // If there is active energy data, add them both up.
-                    coalescedData[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
-                }
+                dayData.append(DayData(date: date, sleep: sleep, steps: steps, energy: energy, distance: distance))
             }
+
+            // print(dayData)
         }
 
-        self.coalescedEnergy = coalescedData
+        // self.coalescedEnergy = coalescedData
     }
 
     private func updateSleepAnalysis() {
@@ -259,7 +280,7 @@ class TableViewController: SweetTableController {
 
         let calendar = Calendar.autoupdatingCurrent
 
-        var anchorComponents = calendar.dateComponents([.day, .month, .year], from: Date())
+        var anchorComponents = calendar.dateComponents([.day, .month, .year, .calendar], from: Date())
         anchorComponents.hour = 0
         anchorComponents.year! -= 1
 
@@ -300,54 +321,54 @@ class TableViewController: SweetTableController {
     }
 
     @objc private func uploadActivities() {
-//        let workouts = self.workouts.values
-//
-//        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
-//            let type = workout.activityTypeString
-//            let duration = workout.duration
-//            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
-//            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
-//            let start = workout.startDate
-//            let end = workout.endDate
-//            let device = workout.device?.name ?? ""
-//            let source = workout.sourceRevision.source.name
-//
-//            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
-//                let dictionary = [
-//                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
-//                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
-//                    ]
-//
-//                return dictionary
-//            })
-//
-//            return [
-//                "type": type,
-//                "duration": duration,
-//                "distance": distance,
-//                "energy": energy,
-//                "start_date_time_interval": start.timeIntervalSince1970,
-//                "end_date_time_interval": end.timeIntervalSince1970,
-//                "device_name": device,
-//                "source_name": source,
-//                "heart_rate_samples": hrSamples
-//            ]
-//        })
+        //        let workouts = self.workouts.values
+        //
+        //        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
+        //            let type = workout.activityTypeString
+        //            let duration = workout.duration
+        //            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
+        //            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
+        //            let start = workout.startDate
+        //            let end = workout.endDate
+        //            let device = workout.device?.name ?? ""
+        //            let source = workout.sourceRevision.source.name
+        //
+        //            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
+        //                let dictionary = [
+        //                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
+        //                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
+        //                    ]
+        //
+        //                return dictionary
+        //            })
+        //
+        //            return [
+        //                "type": type,
+        //                "duration": duration,
+        //                "distance": distance,
+        //                "energy": energy,
+        //                "start_date_time_interval": start.timeIntervalSince1970,
+        //                "end_date_time_interval": end.timeIntervalSince1970,
+        //                "device_name": device,
+        //                "source_name": source,
+        //                "heart_rate_samples": hrSamples
+        //            ]
+        //        })
 
         var data = [String: [[String: Any]]]()
 
-//        data["energy"] = [[String: Any]]()
-//        for energy in self.coalescedEnergy.values {
-//            let timeinterval = energy.basalDataPoint.startDate.timeIntervalSince1970
-//            let basalKcal = energy.basalDataPoint.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
-//            let activeKcal = energy.activeDataPoint?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
-//
-//            data["energy"]?.append([
-//                "basal_energy_burned": basalKcal,
-//                "active_energy_burned": activeKcal,
-//                "time_interval": timeinterval
-//            ])
-//        }
+        //        data["energy"] = [[String: Any]]()
+        //        for energy in self.coalescedEnergy.values {
+        //            let timeinterval = energy.basalDataPoint.startDate.timeIntervalSince1970
+        //            let basalKcal = energy.basalDataPoint.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
+        //            let activeKcal = energy.activeDataPoint?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0
+        //
+        //            data["energy"]?.append([
+        //                "basal_energy_burned": basalKcal,
+        //                "active_energy_burned": activeKcal,
+        //                "time_interval": timeinterval
+        //            ])
+        //        }
 
         self.apiClient.post(data: data, {
             print("done")
