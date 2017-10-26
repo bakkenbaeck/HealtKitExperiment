@@ -154,7 +154,7 @@ class MainViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        self.usernameTextField.becomeFirstResponder()g
+        self.usernameTextField.becomeFirstResponder()
         self.updateActivities()
     }
 
