@@ -387,7 +387,8 @@ class MainViewController: UIViewController {
             data.append(dayData.asJSON)
         })
 
-        self.apiClient.post(username: self.usernameTextField.text ?? "tester", data: data, {
+        let username =  self.usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() 
+        self.apiClient.post(username: username ?? "tester", data: data, {
             print("done")
         })
     }
