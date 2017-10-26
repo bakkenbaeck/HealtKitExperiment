@@ -6,7 +6,9 @@ class APIClient {
 
     func post(data: [[String: Any]], _ completion: (() -> Void)) {
         let path =  "/"
-        let parameters = RequestParameter(["username": "test", "data": data])
+
+        // replace username to yours for now manually from code.
+        let parameters = RequestParameter(["username": "august", "data": data])
 
         self.teapot.post(path, parameters: parameters) { result in
             switch result {
