@@ -14,7 +14,7 @@ class DayData: NSObject {
 
     var asJSON: [String: Any] {
         return [
-            "date": self.date.timeIntervalSince1970,
+            "date": self.ISODateFormatter.string(from: self.date),
             "steps": self.steps?.sumQuantity()?.doubleValue(for: .count()) ?? 0.0,
             "distance": self.distance?.sumQuantity()?.doubleValue(for: HKUnit.meter()) ?? 0.0,
             "energy": [
@@ -74,6 +74,14 @@ class DayData: NSObject {
 
         return dateFormatter
     }()
+
+    fileprivate lazy var ISODateFormatter: DateFormatter = {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZ"
+
+        return dateFormatter
+    }()
+
 
     init(date: Date, sleep: SleepAnalysis? = nil, steps: HKStatistics? = nil, energy: Energy? = nil, distance: HKStatistics? = nil) {
         self.date = date
