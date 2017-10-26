@@ -3,7 +3,6 @@ import HealthKit
 import HealthKitUI
 import MapKit
 import SweetUIKit
-import SweetSwift
 
 class MainViewController: UIViewController {
     let apiClient = APIClient()
@@ -155,22 +154,15 @@ class MainViewController: UIViewController {
         super.viewWillAppear(animated)
 
         self.usernameTextField.becomeFirstResponder()
-        self.updateActivities()
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-
+    func updateActivities() {
         self.loadingIndicator.startAnimating()
-    }
 
-    private func updateActivities() {
         self.updateSleepAnalysis()
         self.updateEnergy()
         self.updateSteps()
         self.updateWalkingDistance()
-
-        // self.updateWorkoutsWithHeartRateDate()
     }
 
     private func coalesceData() {

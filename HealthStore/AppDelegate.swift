@@ -60,7 +60,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 return;
             }
 
-            print(success)
+            DispatchQueue.main.async {
+                // I know, I know…
+                ((self.window?.rootViewController as? UINavigationController)?.topViewController as? MainViewController)?.updateActivities()
+            }
         }
     }
 }

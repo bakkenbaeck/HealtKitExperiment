@@ -1,5 +1,4 @@
 import SweetUIKit
-import SweetSwift
 import UIKit
 
 class SampleCell: UITableViewCell {
