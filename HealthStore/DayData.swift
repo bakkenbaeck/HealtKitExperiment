@@ -14,13 +14,12 @@ class DayData: NSObject {
 
     var asJSON: [String: Any] {
         return [
-            self.ISODateFormatter.string(from: self.date): [
-                "steps": self.steps?.sumQuantity()?.doubleValue(for: .count()) ?? 0.0,
-                "distance": self.distance?.sumQuantity()?.doubleValue(for: HKUnit.meter()) ?? 0.0,
-                "energy": [
-                    "basal": self.energy?.basalDataPoint.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0,
-                    "active": self.energy?.activeDataPoint?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0,
-                ]
+            "date": self.ISODateFormatter.string(from: self.date),
+            "steps": self.steps?.sumQuantity()?.doubleValue(for: .count()) ?? 0.0,
+            "distance": self.distance?.sumQuantity()?.doubleValue(for: HKUnit.meter()) ?? 0.0,
+            "energy": [
+                "basal": self.energy?.basalDataPoint.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0,
+                "active": self.energy?.activeDataPoint?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0.0,
             ]
         ]
     }
