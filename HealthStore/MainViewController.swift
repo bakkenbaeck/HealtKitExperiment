@@ -31,9 +31,29 @@ class MainViewController: UIViewController {
     fileprivate lazy var explanationLabel: UILabel = {
         let view = UILabel(withAutoLayout: true)
 
-        view.font = .systemFont(ofSize: 24)
+        view.font = .systemFont(ofSize: 18)
         view.numberOfLines = 0
-        view.text = "Welcome to HealthStore. After we're finished loading, feel free to hit the big blue button to send all your 🔐 private 🔐 health data to our servers."
+        view.text = "Welcome to HealthStore. After we're finished loading, feel free to hit the big blue button to send all your 🔐 private 🔐 health data to our servers. Just set up a username and hit the button."
+        view.setContentHuggingPriority(.required, for: .vertical)
+
+        return view
+    }()
+
+    fileprivate lazy var usernameLabel: UILabel = {
+        let view = UILabel(withAutoLayout: true)
+
+        view.font = .systemFont(ofSize: 18)
+        view.text = "Username"
+        view.setContentHuggingPriority(.required, for: .horizontal)
+
+        return view
+    }()
+
+    fileprivate lazy var usernameTextField: UITextField = {
+        let view = UITextField(withAutoLayout: true)
+
+        view.font = .systemFont(ofSize: 19)
+        view.placeholder = "myuser"
 
         return view
     }()
@@ -104,16 +124,28 @@ class MainViewController: UIViewController {
 
         self.view.backgroundColor = .white
         self.view.addSubview(self.explanationLabel)
+        self.view.addSubview(self.usernameLabel)
+        self.view.addSubview(self.usernameTextField)
         self.view.addSubview(self.uploadButton)
         self.view.addSubview(self.loadingIndicator)
 
         self.uploadButton.centerXAnchor.constraint(equalTo: self.view.centerXAnchor).isActive = true
         self.uploadButton.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor, constant: 60).isActive = true
 
-        self.explanationLabel.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -60).isActive = true
-        self.explanationLabel.topAnchor.constraint(equalTo: self.uploadButton.bottomAnchor, constant: 60).isActive = true
+        self.usernameLabel.set(height: 32)
+        self.usernameLabel.topAnchor.constraint(equalTo: self.uploadButton.bottomAnchor, constant: 54).isActive = true
+        self.usernameLabel.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 24).isActive = true
+        self.usernameLabel.rightAnchor.constraint(equalTo: self.usernameTextField.leftAnchor, constant: -8).isActive = true
+
+        self.usernameTextField.set(height: 32)
+        self.usernameTextField.topAnchor.constraint(equalTo: self.usernameLabel.topAnchor).isActive = true
+        self.usernameTextField.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: 8).isActive = true
+        self.usernameTextField.bottomAnchor.constraint(equalTo: self.usernameLabel.bottomAnchor).isActive = true
+
+        self.explanationLabel.topAnchor.constraint(equalTo: self.usernameLabel.bottomAnchor, constant: 44).isActive = true
         self.explanationLabel.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 24).isActive = true
         self.explanationLabel.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -24).isActive = true
+        // self.explanationLabel.bottomAnchor.constraint(greaterThanOrEqualTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -60).isActive = true
 
         self.loadingIndicator.centerXAnchor.constraint(equalTo: self.view.centerXAnchor).isActive = true
         self.loadingIndicator.centerYAnchor.constraint(equalTo: self.view.centerYAnchor, constant: -60).isActive = true
@@ -303,33 +335,6 @@ class MainViewController: UIViewController {
         self.coalescedEnergy = coalescedEnergy
     }
 
-//    private func updateWorkoutsWithHeartRateDate() {
-//        let workoutsQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
-//            guard error == nil else { return }
-//
-//            if let samples = samples {
-//                let watchSamples = samples //.flatMap({ sample -> HKSample? in return sample.sourceRevision.productType?.hasPrefix("Watch") == true ? sample : nil })
-//
-//                let grouped = GroupedDataSource<Date, HKWorkout>()
-//                watchSamples.reversed().forEach({ watchSample in
-//                    guard let workout = watchSample as? HKWorkout else { return }
-//
-//                    self.fetchHeartRateSamples(for: workout)
-//
-//                    let calendar = Calendar.autoupdatingCurrent
-//                    let components = calendar.dateComponents([.month, .year, .calendar], from: workout.startDate)
-//                    let date = components.date!
-//
-//                    grouped[date].append(workout)
-//                })
-//
-//                self.workouts = grouped
-//            }
-//        }
-//
-//        self.healthStore.execute(workoutsQuery)
-//    }
-
     private func updateSteps() {
         let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
 
@@ -384,40 +389,6 @@ class MainViewController: UIViewController {
     }
 
     @objc private func uploadActivities() {
-        //        let workouts = self.workouts.values
-        //
-        //        let workoutsJSON = workouts.flatMap({ workout -> [String: Any]? in
-        //            let type = workout.activityTypeString
-        //            let duration = workout.duration
-        //            let distance = workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0
-        //            let energy = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
-        //            let start = workout.startDate
-        //            let end = workout.endDate
-        //            let device = workout.device?.name ?? ""
-        //            let source = workout.sourceRevision.source.name
-        //
-        //            let hrSamples = workout.heartRateSamples.flatMap({ hrSample -> [String: Any]? in
-        //                let dictionary = [
-        //                    HKQuantityTypeIdentifier.heartRate.rawValue: hrSample.quantity.doubleValue(for: HKUnit(from: "count/min")),
-        //                    "date_time_interval": hrSample.startDate.timeIntervalSince1970,
-        //                    ]
-        //
-        //                return dictionary
-        //            })
-        //
-        //            return [
-        //                "type": type,
-        //                "duration": duration,
-        //                "distance": distance,
-        //                "energy": energy,
-        //                "start_date_time_interval": start.timeIntervalSince1970,
-        //                "end_date_time_interval": end.timeIntervalSince1970,
-        //                "device_name": device,
-        //                "source_name": source,
-        //                "heart_rate_samples": hrSamples
-        //            ]
-        //        })
-
         var data = [[String: Any]]()
         self.dayData.forEach({ dayData in
             data.append(dayData.asJSON)
