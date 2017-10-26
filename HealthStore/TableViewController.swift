@@ -47,6 +47,7 @@ class TableViewController: SweetTableController {
     fileprivate var activeEnergy = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
+                self.coalesceData()
                 self.tableView.reloadData()
             }
         }
@@ -55,10 +56,20 @@ class TableViewController: SweetTableController {
     fileprivate var basalEnergy = GroupedDataSource<Date, HKStatistics>() {
         didSet {
             DispatchQueue.main.async {
+                self.coalesceData()
                 self.tableView.reloadData()
             }
         }
     }
+
+    fileprivate var coalescedEnergy = GroupedDataSource<Date, Energy>() {
+        didSet {
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+    }
+
 
     fileprivate var distanceWalked = GroupedDataSource<Date, HKStatistics>() {
         didSet {
@@ -92,7 +103,7 @@ class TableViewController: SweetTableController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .redo, target: self, action: #selector(self.uploadActivities))
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(self.uploadActivities))
 
         self.title = "HealthStore"
 
@@ -119,7 +130,66 @@ class TableViewController: SweetTableController {
         // self.updateWorkoutsWithHeartRateDate()
     }
 
-    func updateWalkingDistance() {
+    class Energy: NSObject {
+        let activeDataPoint: HKStatistics?
+        let basalDataPoint: HKStatistics
+
+        var totalEnergy: HKQuantity {
+            let kcal: HKUnit = .kilocalorie()
+
+            let basal = self.basalDataPoint.sumQuantity()?.doubleValue(for: kcal) ?? 0.0
+            let active = self.activeDataPoint?.sumQuantity()?.doubleValue(for: kcal) ?? 0.0
+
+            let sum = basal + active
+
+            return HKQuantity(unit: kcal, doubleValue: sum)
+        }
+
+        init(activeDataPoint: HKStatistics? = nil, basalDataPoint: HKStatistics) {
+            self.activeDataPoint = activeDataPoint
+            self.basalDataPoint = basalDataPoint
+        }
+    }
+
+    private func coalesceData() {
+        let coalescedData = GroupedDataSource<Date, Energy>()
+        let calendar = Calendar.autoupdatingCurrent
+
+        // We have days where there's basal energy but no active energy.
+        // But there's no way to have active and not basal.
+
+        // Go through every basal energy entry. Get each month:
+        for month in self.basalEnergy.keys {
+            // then each individual day with data
+            for basalDataPoint in self.basalEnergy[month] {
+                // Skip days where we have no basal data.
+                guard basalDataPoint.sumQuantity() != nil else { continue }
+
+                // Look for the active data point in the same day as the basal data.
+                let activeDataPoints = self.activeEnergy[month].filter({ statistics -> Bool in
+                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
+                })
+
+                // If we find more then one, something went wrong in our statistics query.
+                if activeDataPoints.count > 1 {
+                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
+                }
+
+                // If there's no active data, set Energy with basal only.
+                // Still grouped by months
+                if activeDataPoints.isEmpty {
+                    coalescedData[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
+                } else if let activeDataPoint = activeDataPoints.first  {
+                    // If there is active energy data, add them both up.
+                    coalescedData[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
+                }
+            }
+        }
+
+        self.coalescedEnergy = coalescedData
+    }
+
+    private func updateWalkingDistance() {
         let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
 
         self.executeStatistcsQuery(for: distanceType) { results in
@@ -127,7 +197,7 @@ class TableViewController: SweetTableController {
         }
     }
 
-    func updateBasalEnergy() {
+    private func updateBasalEnergy() {
         let basalEnergyType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
 
         self.executeStatistcsQuery(for: basalEnergyType) { results in
@@ -135,7 +205,7 @@ class TableViewController: SweetTableController {
         }
     }
 
-    func updateActiveEnergy() {
+    private func updateActiveEnergy() {
         let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
 
         self.executeStatistcsQuery(for: activeEnergyType) { results in
@@ -143,7 +213,7 @@ class TableViewController: SweetTableController {
         }
     }
 
-    func updateWorkoutsWithHeartRateDate() {
+    private func updateWorkoutsWithHeartRateDate() {
         let workoutsQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
             guard error == nil else { return }
 
@@ -273,23 +343,23 @@ extension TableViewController: UITableViewDelegate {
 extension TableViewController: UITableViewDataSource {
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return self.distanceWalked.keys.count
+        return self.coalescedEnergy.keys.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.distanceWalked.count(for: section)
+        return self.coalescedEnergy.count(for: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(SampleCell.self, for: indexPath)
 
-        let sample = self.distanceWalked.item(at: indexPath)
+        let sample = self.coalescedEnergy.item(at: indexPath)
 
         let label: String
         let dateString: String
-        if let stepsStatistics = (sample as? HKStatistics), let sum = stepsStatistics.sumQuantity() {
-            label = String(describing: sum)
-            dateString = self.dateFormatter.string(from: stepsStatistics.startDate)
+        if let energy = (sample as? Energy) {
+            label = "\(energy.totalEnergy) (basal: \(energy.basalDataPoint.sumQuantity()!), active: \(energy.activeDataPoint?.sumQuantity() ?? HKQuantity(unit: .kilocalorie(), doubleValue: 0.0))"
+            dateString = self.dateFormatter.string(from: energy.basalDataPoint.startDate)
         } else {
             label = ""
             dateString = ""
@@ -311,7 +381,7 @@ extension TableViewController: UITableViewDataSource {
 
         let df = DateFormatter()
         df.dateFormat = "MMMM yyyy"
-        label.text = df.string(from: self.workouts.reversedSortedKeys[section])
+        label.text = df.string(from: self.coalescedEnergy.reversedSortedKeys[section])
         label.font = .boldSystemFont(ofSize: 24)
         label.textColor = .blue
 
@@ -319,6 +389,6 @@ extension TableViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 60
+        return 80
     }
 }
