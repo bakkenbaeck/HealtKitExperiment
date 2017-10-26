@@ -394,7 +394,7 @@ class MainViewController: UIViewController {
             data.append(dayData.asJSON)
         })
 
-        self.apiClient.post(username: "tester", data: data, {
+        self.apiClient.post(username: self.usernameTextField.text ?? "tester", data: data, {
             print("done")
         })
     }
