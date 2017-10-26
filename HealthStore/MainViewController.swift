@@ -52,6 +52,8 @@ class MainViewController: UIViewController {
         let view = UITextField(withAutoLayout: true)
 
         view.font = .systemFont(ofSize: 19)
+        view.autocorrectionType = .no
+        view.autocapitalizationType = .none
         view.placeholder = "myuser"
 
         return view
@@ -387,7 +389,7 @@ class MainViewController: UIViewController {
             data.append(dayData.asJSON)
         })
 
-        let username =  self.usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() 
+        let username =  self.usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         self.apiClient.post(username: username ?? "tester", data: data, {
             print("done")
         })
