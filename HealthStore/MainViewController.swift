@@ -390,8 +390,12 @@ class MainViewController: UIViewController {
         })
 
         let username =  self.usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        self.apiClient.post(username: username ?? "tester", data: data, {
-            print("done")
+        self.apiClient.post(username: username ?? "tester", data: data, { success in
+            let alert = UIAlertController(title: "Synchronising completed", message: "Sychronisation \(success ? "completed" : "failed" ).", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Done", style: .default, handler: { _ in
+                self.dismiss(animated: true)
+            }))
+            self.present(alert, animated: true, completion: nil)
         })
     }
 }
