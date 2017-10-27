@@ -118,6 +118,7 @@ class MainViewController: UIViewController {
 
     let healthStore = HKHealthStore()
 
+    // MARK: View life-cycle
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -167,6 +168,92 @@ class MainViewController: UIViewController {
         self.updateWalkingDistance()
     }
 
+    // MARK: Update individual category/types.
+    private func updateSleepAnalysis() {
+        let sleepAnalysisType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!
+
+        let sleepAnalysisQuery = HKSampleQuery(sampleType: sleepAnalysisType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
+
+            guard let samples = samples else { return }
+
+            self.sleepAnalysis = samples.flatMap { sample -> SleepAnalysis? in
+                guard let sample = sample as? HKCategorySample else { return nil }
+
+                return SleepAnalysis(state: HKCategoryValueSleepAnalysis(rawValue: sample.value)!, startDate: sample.startDate, endDate: sample.endDate)
+            }
+        }
+
+        self.healthStore.execute(sleepAnalysisQuery)
+    }
+
+    private func updateWalkingDistance() {
+        let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
+
+        self.executeStatistcsQuery(for: distanceType) { results in
+            self.distanceWalked = results
+        }
+    }
+
+    private func updateEnergy() {
+        let basalEnergyType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
+
+        self.executeStatistcsQuery(for: basalEnergyType) { basalEnergy in
+            let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+
+            self.executeStatistcsQuery(for: activeEnergyType) { activeEnergy in
+                self.coalesceEnergy(basalEnergy: basalEnergy, activeEnergy: activeEnergy)
+            }
+        }
+    }
+
+    private func updateSteps() {
+        let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+
+        self.executeStatistcsQuery(for: stepsCountType) { results in
+            self.steps = results
+        }
+    }
+
+    // MARK: Combine basal and active energy
+    private func coalesceEnergy(basalEnergy: GroupedDataSource<Date, HKStatistics>, activeEnergy: GroupedDataSource<Date, HKStatistics>) {
+        let calendar = Calendar.autoupdatingCurrent
+        let coalescedEnergy = GroupedDataSource<Date, Energy>()
+
+        // We have days where there's basal energy but no active energy.
+        // But there's no way to have active and not basal.
+        // Go through every basal energy entry. Get each month:
+        for month in basalEnergy.keys {
+            // then each individual day with data
+            for basalDataPoint in basalEnergy[month] {
+                // Skip days where we have no basal data.
+                guard basalDataPoint.sumQuantity() != nil else { continue }
+
+                // Look for the active data point in the same day as the basal data.
+                let activeDataPoints = activeEnergy[month].filter({ statistics -> Bool in
+                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
+                })
+
+                // If we find more then one, something went wrong in our statistics query.
+                if activeDataPoints.count > 1 {
+                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
+                }
+
+                // If there's no active data, set Energy with basal only.
+                // Still grouped by months
+                if activeDataPoints.isEmpty {
+                    coalescedEnergy[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
+                } else if let activeDataPoint = activeDataPoints.first  {
+                    // If there is active energy data, add them both up.
+                    coalescedEnergy[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
+                }
+            }
+        }
+
+        self.coalescedEnergy = coalescedEnergy
+    }
+
+
+    // MARK: Organise all the data
     private func coalesceData() {
         let calendar = Calendar.autoupdatingCurrent
 
@@ -256,88 +343,7 @@ class MainViewController: UIViewController {
         self.dayData = dayData
     }
 
-    private func updateSleepAnalysis() {
-        let sleepAnalysisType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!
-
-        let sleepAnalysisQuery = HKSampleQuery(sampleType: sleepAnalysisType, predicate: nil, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { query, samples, error in
-
-            guard let samples = samples else { return }
-
-            self.sleepAnalysis = samples.flatMap { sample -> SleepAnalysis? in
-                guard let sample = sample as? HKCategorySample else { return nil }
-
-                return SleepAnalysis(state: HKCategoryValueSleepAnalysis(rawValue: sample.value)!, startDate: sample.startDate, endDate: sample.endDate)
-            }
-        }
-
-        self.healthStore.execute(sleepAnalysisQuery)
-    }
-
-    private func updateWalkingDistance() {
-        let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
-
-        self.executeStatistcsQuery(for: distanceType) { results in
-            self.distanceWalked = results
-        }
-    }
-
-    private func updateEnergy() {
-        let basalEnergyType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
-
-        self.executeStatistcsQuery(for: basalEnergyType) { basalEnergy in
-            let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
-
-            self.executeStatistcsQuery(for: activeEnergyType) { activeEnergy in
-                self.coalesceEnergy(basalEnergy: basalEnergy, activeEnergy: activeEnergy)
-            }
-        }
-    }
-
-    private func coalesceEnergy(basalEnergy: GroupedDataSource<Date, HKStatistics>, activeEnergy: GroupedDataSource<Date, HKStatistics>) {
-        let calendar = Calendar.autoupdatingCurrent
-        let coalescedEnergy = GroupedDataSource<Date, Energy>()
-
-        // We have days where there's basal energy but no active energy.
-        // But there's no way to have active and not basal.
-        // Go through every basal energy entry. Get each month:
-        for month in basalEnergy.keys {
-            // then each individual day with data
-            for basalDataPoint in basalEnergy[month] {
-                // Skip days where we have no basal data.
-                guard basalDataPoint.sumQuantity() != nil else { continue }
-
-                // Look for the active data point in the same day as the basal data.
-                let activeDataPoints = activeEnergy[month].filter({ statistics -> Bool in
-                    return calendar.isDate(statistics.startDate, inSameDayAs: basalDataPoint.startDate)
-                })
-
-                // If we find more then one, something went wrong in our statistics query.
-                if activeDataPoints.count > 1 {
-                    fatalError("Something went wrong. Statistics should be broken down by the same day.")
-                }
-
-                // If there's no active data, set Energy with basal only.
-                // Still grouped by months
-                if activeDataPoints.isEmpty {
-                    coalescedEnergy[month].insert(Energy(basalDataPoint: basalDataPoint), at: 0)
-                } else if let activeDataPoint = activeDataPoints.first  {
-                    // If there is active energy data, add them both up.
-                    coalescedEnergy[month].insert(Energy(activeDataPoint: activeDataPoint, basalDataPoint: basalDataPoint), at: 0)
-                }
-            }
-        }
-
-        self.coalescedEnergy = coalescedEnergy
-    }
-
-    private func updateSteps() {
-        let stepsCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-
-        self.executeStatistcsQuery(for: stepsCountType) { results in
-            self.steps = results
-        }
-    }
-
+    // MARK: Health kit query methods
     private func executeStatistcsQuery(for quantityType: HKQuantityType, completion: @escaping ((GroupedDataSource<Date, HKStatistics>) -> Void)) {
         let results = GroupedDataSource<Date, HKStatistics>()
 
@@ -383,6 +389,7 @@ class MainViewController: UIViewController {
         self.healthStore.execute(hrQuery)
     }
 
+    // MARK: Synching
     @objc private func uploadActivities() {
         var data = [[String: Any]]()
         self.dayData.forEach({ dayData in
